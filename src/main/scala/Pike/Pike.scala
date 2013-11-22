@@ -63,7 +63,7 @@ class Pike {
   /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, rName: String) extends Instruction {
     override def action() = {
-      val newReg: Register = makeRegister(value)      
+      val newReg: Register = makeRegister(value)
       registers(getRegisterIndex(rName)) = newReg
       nextInstruction()
     }
@@ -85,7 +85,6 @@ class Pike {
       case _ => throw new RuntimeException("Illegal register type: " + r)
     }
   }
- 
 
   /* jmp instruction: jumps to the nth instruction and starts running at it */
   case class jmp(n: Int) extends Instruction {
