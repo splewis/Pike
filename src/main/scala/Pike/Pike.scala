@@ -11,6 +11,7 @@ class Pike {
 
   /* Runtime variables */
   private var shouldKill = false
+  private var instructionsRead = false
   private var instructionNumber = 0
   private var instructions = new MutableList[Instruction]()
   private var labels = new HashMap[String, Int]()
@@ -47,7 +48,10 @@ class Pike {
   }
 
   /* run command: begins program execution - this is NOT an instruction! */
-  def run(): Unit = instructions(0).action()
+  def run(): Unit =  {
+    instructionsRead = true // flag to prevent more instructions from being added to list
+    instructions(0).action()
+  }
 
   /*
    * Instruction data structures. 
@@ -55,7 +59,8 @@ class Pike {
    *  - the end of action should specify how to continue after running the instruction
    */
   abstract class Instruction {
-    instructions += this
+    if (!instructionsRead)
+    	instructions += this
     def action(): Unit
     def apply() = action()
   }
