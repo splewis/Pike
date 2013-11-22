@@ -88,7 +88,7 @@ class Pike {
   }
 
   /* Helper function for int operations */
-  private def getIntValue(r: String): Int = {
+  protected def getIntValue(r: String): Int = {
     val reg: Register = getRegister(r)
     if (reg.isInstanceOf[IntRegister])
       return reg.asInstanceOf[IntRegister].value
@@ -97,12 +97,12 @@ class Pike {
   }
 
   /* Helper function for double operations */
-  private def getDoubleVaule(r: String): Double = {
+  protected def getDoubleValue(r: String): Double = {
     val reg: Register = getRegister(r)
     if (reg.isInstanceOf[DoubleRegister])
       return reg.asInstanceOf[DoubleRegister].value
     else
-      throw new RuntimeException(r + " does not contain an integer.")
+      throw new RuntimeException(r + " does not contain a floating point value.")
   }
 
   /* add instruction: adds integers from 2 registers and puts the result in r3 */
@@ -132,20 +132,21 @@ class Pike {
 
   /* fadd instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fadd(r1: String, r2: String, r3: String) extends Instruction {
-    override def action() = mov(getDoubleVaule(r1) + getDoubleVaule(r2), r3).action()
+    override def action() = mov(getDoubleValue(r1) + getDoubleValue(r2), r3).action()
   }
 
   /* fmul instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fmul(r1: String, r2: String, r3: String) extends Instruction {
-    override def action() = mov(getDoubleVaule(r1) * getDoubleVaule(r2), r3).action()
+    override def action() = mov(getDoubleValue(r1) * getDoubleValue(r2), r3).action()
   }
 
   /* fdiv instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fdiv(r1: String, r2: String, r3: String) extends Instruction {
-    override def action() = mov(getDoubleVaule(r1) / getDoubleVaule(r2), r3).action()
+    override def action() = mov(getDoubleValue(r1) / getDoubleValue(r2), r3).action()
   }
 
-  def registerInfo(rName: String): String = {
+  /* Debug/testing/display functions. Not intended to be part of the language. */
+  protected def registerInfo(rName: String): String = {
     val reg: Register = getRegister(rName)
     val titleStr = "Register " + rName + " info:"
     val infoStr = {
@@ -159,7 +160,7 @@ class Pike {
     return titleStr + "\n" + infoStr
   }
 
-  def printRegisterInfo(rName: String): Unit = {
+  protected def printRegisterInfo(rName: String): Unit = {
     println(registerInfo(rName))
   }
 
