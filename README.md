@@ -3,10 +3,27 @@ Pike
 
 Pike is a small Scala DSL that mimics an Assembly-like language.
 
-A feature of Pike is the type safety of the runtime system. For example, the following commands result in an error:
+Here is an example program:
 
-		mov(1.3, "r1") // floating point store
-		mov(1, "r2")   // integer store
-		add("r1", "r2", "r3")
+```scala
+	object SquareSummer extends Pike {
+	  def main(args: Array[String]) = {
+	    mov(0, r0) // summation register
+	    mov(10, r1) // temp register for i=[1..10]
+	    mov(0, r2) // temp register for i=[1..10]
+	    label("loop")
+	    mov(r1, r2)
+	    mul(r2, r2, r2) // r2 * r2 -> r2
+	    add(r0, r2, r0) // r0 + r2 -> r2
+	    dec(r1)
+	    jpos("loop", r1) // jumps to loop label if r1 is positive
+	    iprint(r0) // prints integer value in r0
+	    run
+	  }
+	}
+```
 
-In addition, exception output indicates what went wrong.
+This program computes 10^2 + 9^2 + ... + 1^2 = 385 and prints the result.
+
+
+
