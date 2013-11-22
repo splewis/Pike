@@ -175,7 +175,14 @@ class Pike {
   }
 
   /* implicit conversion that allows jumps to labels*/
-  implicit def label2Line(labelName: String) = labels(labelName)
+  implicit def label2Line(labelName: String) = { 
+    try { 
+      labels(labelName) 
+    } catch {
+      case e: NoSuchElementException => readErr("no label named " + labelName)
+    }
+    
+  }
 
   /* kill instruction: ends program execution */
   object kill extends Instruction {
@@ -270,11 +277,11 @@ class Pike {
   case class fdiv(r1: String, r2: String, r3: String) extends Instruction {
     override def action() = mov(getDoubleValue(r1) / getDoubleValue(r2), r3).action()
   }
-
+  
   /* Internal exceptions methods for readtime/runtime errors */
   private def readErr(str: String) = {
-    val errStr = ("Syntax error at instruction " + instructions.size
-      + " = " + instructions.last + ", " + str)
+    val errStr = ("Syntax error at instruction " + (instructions.size+1)
+      + " after " + instructions.last + ", " + str)
     throw new RuntimeException("\n" + errStr)
   }
   private def runErr(str: String) = {
