@@ -37,8 +37,6 @@ class TestSuite {
       dec(r1)
       reljpos(-2, r1) // relative jump 2 instructions back
       run
-//      printRegisterInfo(r0)
-//      printRegisterInfo(r1)
       assertEquals(55, getIntValue(r0))
     }
   }

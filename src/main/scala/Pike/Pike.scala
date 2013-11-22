@@ -12,11 +12,10 @@ class Pike {
   private var instructions = new MutableList[Instruction]()
   private var labels = new HashMap[String, Int]()
 
-  
   /* Register information  */
   private val NumRegisters: Int = 10 // Number of general purpose registers
   private val registers = new Array[Register](NumRegisters)
-  
+
   /* Register data structures */
   abstract sealed class Register {
     val name = "undefined name"
@@ -35,9 +34,9 @@ class Pike {
   object r6 extends Register { override val name = "r6" }
   object r7 extends Register { override val name = "r7" }
   object r8 extends Register { override val name = "r8" }
-  object r9 extends Register { override val name = "r9" }  
+  object r9 extends Register { override val name = "r9" }
   implicit def reg2str(r: Register): String = r.name
-  
+
   /* Register helper functions */
   private def getRegister(rName: String): Register = {
     return registers(getRegisterIndex(rName))
@@ -48,7 +47,7 @@ class Pike {
       throw new RuntimeException("Illegal Register name: " + rName)
     val index: Int = Integer.parseInt(rName.substring(1))
     if (index < 0 || index >= NumRegisters)
-      throw new RuntimeException("Illegal Register number: " + index)
+      readErr("Illegal register name: " + rName)
     return index
   }
 
@@ -65,9 +64,9 @@ class Pike {
   }
 
   /* run command: begins program execution - this is NOT an instruction! */
-  def run(): Unit =  {
+  def run(): Unit = {
     instructionsRead = true // flag to prevent more instructions from being added to list
-    instructions(0).action()
+    goto(0)
   }
 
   /*
@@ -77,18 +76,27 @@ class Pike {
    */
   abstract class Instruction {
     if (!instructionsRead)
-    	instructions += this
+      instructions += this
     def action(): Unit
-    def apply() = action()
   }
 
   /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, rName: String) extends Instruction {
-    override def action() = {      
+    if (!legalType(value))
+      readErr("Illegal value")
+    override def action() = {
       val newReg: Register = makeRegister(value)
       registers(getRegisterIndex(rName)) = newReg
       nextInstruction()
     }
+  }
+
+  /* Internal register/value helpers */
+  private def legalType(value: Any): Boolean = {
+    return (value.isInstanceOf[Int] ||
+      value.isInstanceOf[Double] ||
+      value.isInstanceOf[Float] ||
+      value.isInstanceOf[Register])
   }
 
   private def makeRegister(value: Any): Register = {
@@ -101,6 +109,7 @@ class Pike {
       case _ => throw new RuntimeException("Illegal register value: " + value.toString)
     }
   }
+
   private def getValue(r: String): Any = {
     getRegister(r) match {
       case x: IntRegister => x.value
@@ -179,7 +188,7 @@ class Pike {
     if (reg.isInstanceOf[IntRegister])
       return reg.asInstanceOf[IntRegister].value
     else
-      throw new RuntimeException(r + " does not contain an integer.")
+      runErr(r + " does not contain an integer.")
   }
 
   /* Helper function for double operations */
@@ -188,7 +197,7 @@ class Pike {
     if (reg.isInstanceOf[DoubleRegister])
       return reg.asInstanceOf[DoubleRegister].value
     else
-      throw new RuntimeException(r + " does not contain a floating point value.")
+      runErr(r + " does not contain a floating point value.")
   }
 
   /* iprint instruction: prints integer in register */
@@ -210,6 +219,11 @@ class Pike {
   /* add instruction: adds integers from 2 registers and puts the result in r3 */
   case class add(r1: String, r2: String, r3: String) extends Instruction {
     override def action() = mov(getIntValue(r1) + getIntValue(r2), r3).action()
+  }
+
+  /* sub instruction: subtracts integers from 2 registers and puts the result in r3 */
+  case class sub(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) - getIntValue(r2), r3).action()
   }
 
   /* mul instruction: multiplies integers from 2 registers and puts the result in r3 */
@@ -242,6 +256,11 @@ class Pike {
     override def action() = mov(getDoubleValue(r1) + getDoubleValue(r2), r3).action()
   }
 
+  /* fsub instruction: subtracts floating point numbers from 2 registers and puts the result in r3 */
+  case class fsub(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getDoubleValue(r1) - getDoubleValue(r2), r3).action()
+  }
+
   /* fmul instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fmul(r1: String, r2: String, r3: String) extends Instruction {
     override def action() = mov(getDoubleValue(r1) * getDoubleValue(r2), r3).action()
@@ -250,6 +269,18 @@ class Pike {
   /* fdiv instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fdiv(r1: String, r2: String, r3: String) extends Instruction {
     override def action() = mov(getDoubleValue(r1) / getDoubleValue(r2), r3).action()
+  }
+
+  /* Internal exceptions methods for readtime/runtime errors */
+  private def readErr(str: String) = {
+    val errStr = ("Syntax error at instruction " + instructions.size
+      + " = " + instructions.last + ", " + str)
+    throw new RuntimeException("\n" + errStr)
+  }
+  private def runErr(str: String) = {
+    val errStr = ("Runtime error at instruction " + instructionNumber
+      + " = " + instructions(instructionNumber) + ", " + str)
+    throw new RuntimeException(errStr)
   }
 
   /* Debug/testing/display functions. Not intended to be part of the language. */
