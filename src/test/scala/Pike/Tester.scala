@@ -1,6 +1,5 @@
 package Pike
 
-import scala.collection.mutable.ListBuffer
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.Before

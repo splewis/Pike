@@ -1,6 +1,5 @@
 package Pike
 
-import java.util.IllegalFormatException
 import scala.collection.mutable.MutableList
 
 class Pike {
