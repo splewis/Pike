@@ -5,18 +5,22 @@ import scala.collection.mutable.MutableList
 
 class Pike {
 
+  /* Register information  */
   private val NumRegisters: Int = 16
   private val registers = new Array[Register](NumRegisters)
 
+  /* Runtime variables */
   private var shouldKill = false
   private var instructionNumber = 0
   private var instructions = new MutableList[Instruction]()
 
+  /* Register data structures */
   abstract sealed class Register
   case class IntRegister(value: Int) extends Register
   case class DoubleRegister(value: Double) extends Register
   case class StringRegister(value: String) extends Register
 
+  /* Register helper functions */
   private def getRegister(rName: String): Register = {
     return registers(getRegisterIndex(rName))
   }
@@ -30,16 +34,34 @@ class Pike {
     return index
   }
 
+  /* Helper functions for the runtime system */
   private def nextInstruction(): Unit = {
     goto(instructionNumber + 1)
   }
 
+  private def goto(n: Int): Unit = {
+    instructionNumber = n
+    if (shouldKill || instructionNumber >= instructions.size || instructionNumber < 0)
+      println("Program terminated")
+    else
+      instructions(instructionNumber).action()
+  }
+
+  /* run command: begins program execution - this is NOT an instruction! */
+  def run(): Unit = instructions(0).action()
+
+  /*
+   * Instruction data structures. 
+   *  - Each Instruction should extend Instruction and override the action method.
+   *  - the end of action should specify how to continue after running the instruction
+   */
   abstract class Instruction {
     instructions += this
     def action(): Unit
     def apply() = action()
   }
 
+  /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, rName: String) extends Instruction {
     override def action() = {
       var newReg: Register = null
@@ -55,112 +77,73 @@ class Pike {
     }
   }
 
+  /* jmp instruction: jumps to the nth instruction and starts running at it */
   case class jmp(n: Int) extends Instruction {
     override def action() = goto(n)
   }
 
-  private def goto(n: Int): Unit = {
-    instructionNumber = n
-    if (shouldKill || instructionNumber >= instructions.size || instructionNumber < 0)
-      println("Program terminated")
-    else
-      instructions(instructionNumber).action()
-  }
-
-  def run(): Unit = instructions(0).action()
-
+  /* kill instruction: ends program execution */
   object kill extends Instruction {
     override def action() = {} // i.e. do nothing
   }
 
-  case class add(r1: String, r2: String, r3: String) extends Instruction {
-    override def action() = {
-      val reg1: Register = getRegister(r1)
-      val reg2: Register = getRegister(r2)
-      var err: Boolean = false
-
-      if (reg1.isInstanceOf[IntRegister] && reg2.isInstanceOf[IntRegister]) {
-        val sum: Int = reg1.asInstanceOf[IntRegister].value + reg2.asInstanceOf[IntRegister].value
-        val inst: Instruction = mov(sum, r3)
-        inst.action()
-      } else {
-        throw new RuntimeException("Type mismatch integer add" + r1 + " to " + r2)
-      }
-    }
-
+  /* Helper function for int operations */
+  private def getIntValue(r: String): Int = {
+    val reg: Register = getRegister(r)
+    if (reg.isInstanceOf[IntRegister])
+      return reg.asInstanceOf[IntRegister].value
+    else
+      throw new RuntimeException(r + " does not contain an integer.")
   }
 
-  //    private def binaryIntFunction(r1: String, r2: String, r3: String, f: (Int, Int) => Int): Unit = {
-  //      val reg1: Register = getRegister(r1)
-  //      val reg2: Register = getRegister(r2)
-  //      var err: Boolean = false
-  //  
-  //      if (reg1.isInstanceOf[IntRegister]) {
-  //        if (reg2.isInstanceOf[IntRegister])
-  //          _mov(f(reg1.asInstanceOf[IntRegister].value, reg2.asInstanceOf[IntRegister].value), r3)
-  //        else
-  //          err = true
-  //      } else {
-  //        err = true
-  //      }
-  //      if (err)
-  //        throw new RuntimeException("Type mismatch integer add" + r1 + " to " + r2)
-  //    }
+  /* Helper function for double operations */
+  private def getDoubleVaule(r: String): Double = {
+    val reg: Register = getRegister(r)
+    if (reg.isInstanceOf[DoubleRegister])
+      return reg.asInstanceOf[DoubleRegister].value
+    else
+      throw new RuntimeException(r + " does not contain an integer.")
+  }
 
-  //    private def _add(r1: String, r2: String, r3: String): Unit = {
-  //      binaryIntFunction(r1, r2, r3, (a, b) => a + b)
-  //    }
-  //
-  //  private def _mod(r1: String, r2: String, r3: String): Unit = {
-  //    binaryIntFunction(r1, r2, r3, (a, b) => a % b)
-  //  }
-  //
-  //  private def _mul(r1: String, r2: String, r3: String): Unit = {
-  //    binaryIntFunction(r1, r2, r3, (a, b) => a * b)
-  //  }
-  //
-  //  private def _idiv(r1: String, r2: String, r3: String): Unit = {
-  //    binaryIntFunction(r1, r2, r3, (a, b) => a / b)
-  //  }
-  //
-  //  private def binaryFloatFunction(r1: String, r2: String, r3: String, f: (Double, Double) => Double): Unit = {
-  //    val reg1: Register = getRegister(r1)
-  //    val reg2: Register = getRegister(r2)
-  //    var err: Boolean = false
-  //
-  //    if (reg1.isInstanceOf[DoubleRegister]) {
-  //      if (reg2.isInstanceOf[DoubleRegister])
-  //        _mov(f(reg1.asInstanceOf[DoubleRegister].value, reg2.asInstanceOf[DoubleRegister].value), r3)
-  //      else
-  //        err = true
-  //
-  //    } else {
-  //      err = true
-  //    }
-  //
-  //    if (err)
-  //      throw new RuntimeException("Type mismatch floating add " + r1 + " to " + r2)
-  //  }
-  //
-  //  private def _fadd(r1: String, r2: String, r3: String): Unit = {
-  //    binaryIntFunction(r1, r2, r3, (a, b) => a + b)
-  //  }
-  //
-  //  private def _fmul(r1: String, r2: String, r3: String): Unit = {
-  //    binaryIntFunction(r1, r2, r3, (a, b) => a * b)
-  //  }
-  //
-  //  private def _fidiv(r1: String, r2: String, r3: String): Unit = {
-  //    binaryIntFunction(r1, r2, r3, (a, b) => a / b)
-  //  }
-  //
-  //  private def _inc(rName: String): Unit = {
-  //    val reg = getRegister(rName)
-  //    if (reg.isInstanceOf[IntRegister])
-  //      _mov(reg.asInstanceOf[IntRegister].value + 1, rName)
-  //    else
-  //      throw new RuntimeException("Cannot increment non-Int register " + rName)
-  //  }
+  /* add instruction: adds integers from 2 registers and puts the result in r3 */
+  case class add(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) + getIntValue(r2), r3).action()
+  }
+
+  /* mul instruction: multiplies integers from 2 registers and puts the result in r3 */
+  case class mul(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) * getIntValue(r2), r3).action()
+  }
+
+  /* idiv instruction: divides integers from 2 registers and puts the result in r3 */
+  case class idiv(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) / getIntValue(r2), r3).action()
+  }
+
+  /* mod instruction: takes the modulus integers from 2 registers and puts the result in r3 */
+  case class mod(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) % getIntValue(r2), r3).action()
+  }
+
+  /* inc instruction: increments the integer value from a register by 1 */
+  case class inc(r1: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) + 1, r1).action()
+  }
+
+  /* fadd instruction: adds floating point numbers from 2 registers and puts the result in r3 */
+  case class fadd(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getDoubleVaule(r1) + getDoubleVaule(r2), r3).action()
+  }
+
+  /* fmul instruction: adds floating point numbers from 2 registers and puts the result in r3 */
+  case class fmul(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getDoubleVaule(r1) * getDoubleVaule(r2), r3).action()
+  }
+
+  /* fdiv instruction: adds floating point numbers from 2 registers and puts the result in r3 */
+  case class fdiv(r1: String, r2: String, r3: String) extends Instruction {
+    override def action() = mov(getDoubleVaule(r1) / getDoubleVaule(r2), r3).action()
+  }
 
   def registerInfo(rName: String): String = {
     val reg: Register = getRegister(rName)
