@@ -8,16 +8,16 @@ Here is an example program:
 ```scala
 	object SquareSummer extends Pike {
 	  def main(args: Array[String]) = {
-	    mov(0, r0) // summation register
-	    mov(10, r1) // temp register for i=[1..10]
-	    mov(0, r2) // temp register for i=[1..10]
+	    mov(0, r0)  // summation register
+	    mov(10, r1) // temp register for i=[10, 9, ..., 1, 0]
+	    mov(0, r2)  // temp register for squares of r1
 	    label("loop")
 	    mov(r1, r2)
 	    mul(r2, r2, r2) // r2 * r2 -> r2
 	    add(r0, r2, r0) // r0 + r2 -> r2
 	    dec(r1)
 	    jpos("loop", r1) // jumps to loop label if r1 is positive
-	    iprint(r0) // prints integer value in r0
+	    iprint(r0)       // prints integer value in r0
 	    run
 	  }
 	}
