@@ -1,5 +1,6 @@
 package Pike
 
+import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
 class Pike {
@@ -12,12 +13,12 @@ class Pike {
   private var shouldKill = false
   private var instructionNumber = 0
   private var instructions = new MutableList[Instruction]()
+  private var labels = new HashMap[String, Int]()
 
   /* Register data structures */
   abstract sealed class Register
   case class IntRegister(value: Int) extends Register
   case class DoubleRegister(value: Double) extends Register
-  case class StringRegister(value: String) extends Register
 
   /* Register helper functions */
   private def getRegister(rName: String): Register = {
@@ -40,9 +41,8 @@ class Pike {
 
   private def goto(n: Int): Unit = {
     instructionNumber = n
-    if (shouldKill || instructionNumber >= instructions.size || instructionNumber < 0)
-      println("Program terminated")
-    else
+    val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
+    if (!outOfBounds && !shouldKill)
       instructions(instructionNumber).action()
   }
 
@@ -63,18 +63,29 @@ class Pike {
   /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, rName: String) extends Instruction {
     override def action() = {
-      var newReg: Register = null
-      value match {
-        case d: Int => newReg = new IntRegister(d)
-        case d: Float => newReg = new DoubleRegister(d)
-        case d: Double => newReg = new DoubleRegister(d)
-        case d: String => newReg = new StringRegister(d)
-        case _ => throw new RuntimeException("Illegal type put in " + rName);
-      }
+      val newReg: Register = makeRegister(value)      
       registers(getRegisterIndex(rName)) = newReg
       nextInstruction()
     }
   }
+
+  private def makeRegister(value: Any): Register = {
+    value match {
+      case x: Int => new IntRegister(x)
+      case x: Float => new DoubleRegister(x)
+      case x: Double => new DoubleRegister(x)
+      case x: String => makeRegister(getValue(x))
+      case _ => throw new RuntimeException("Illegal register value: " + value)
+    }
+  }
+  private def getValue(r: String): Any = {
+    getRegister(r) match {
+      case x: IntRegister => x.value
+      case x: DoubleRegister => x.value
+      case _ => throw new RuntimeException("Illegal register type: " + r)
+    }
+  }
+ 
 
   /* jmp instruction: jumps to the nth instruction and starts running at it */
   case class jmp(n: Int) extends Instruction {
@@ -126,6 +137,15 @@ class Pike {
     }
   }
 
+  /* label instruction: names a point in the code */
+  case class label(name: String) extends Instruction {
+    labels(name) = instructions.size // current line number in reading
+    override def action() = nextInstruction()
+  }
+
+  /* implicit conversion that allows jumps to labels*/
+  implicit def label2Line(labelName: String) = labels(labelName)
+
   /* kill instruction: ends program execution */
   object kill extends Instruction {
     override def action() = {} // i.e. do nothing
@@ -176,7 +196,7 @@ class Pike {
   }
 
   /* idiv instruction: divides integers from 2 registers and puts the result in r3 */
-  case class idiv(r1: String, r2: String, r3: String) extends Instruction {
+  case class div(r1: String, r2: String, r3: String) extends Instruction {
     override def action() = mov(getIntValue(r1) / getIntValue(r2), r3).action()
   }
 
@@ -217,7 +237,6 @@ class Pike {
     val infoStr = {
       reg match {
         case IntRegister(data) => "Type=Int, Data=" + data
-        case StringRegister(data) => "Type=String, Data=" + data
         case DoubleRegister(data) => "Type=Double, Data=" + data
         case _ => "Unhandled Register type"
       }

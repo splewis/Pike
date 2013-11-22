@@ -35,12 +35,30 @@ class TestSuite {
       mov(10, "r1") // temp register
       add("r0", "r1", "r0") // relative jump lands here
       dec("r1")
-      iprint("r1")
-      reljpos(-3, "r1") // relative jump 3 instructions back
+      reljpos(-2, "r1") // relative jump 3 instructions back
       run
       assertEquals(55, getIntValue("r0"))
     }
   }
 
+  @Test
+  def sumSq() = sumSqProgram.runner
+  object sumSqProgram extends Pike {
+    def runner() = {
+      /* computes 10+9+...+0 and puts it in r0 */
+      mov(0, "r0") // summation register
+      mov(10, "r1") // temp register for i=[1..10]
+      label("loop")
+      mov("r1", "r2")
+      mul("r2", "r2", "r2") // square r2
+      add("r0", "r2", "r0") // r0 += r2 
+      dec("r1")      
+      jpos("loop", "r1")
+      run
+      printRegisterInfo("r2")
+      assertEquals(385, getIntValue("r0"))
+    }
+  }
+  
 }
 
