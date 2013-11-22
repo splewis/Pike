@@ -81,6 +81,51 @@ class Pike {
     override def action() = goto(n)
   }
 
+  /* jz instruction: jumps to the nth instruction if the int-valued register is 0 */
+  case class jz(n: Int, r: String) extends Instruction {
+    override def action() = {
+      if (getIntValue(r) == 0) goto(n)
+      else nextInstruction()
+    }
+  }
+  /* reljz instruction: jumps ahead n instruction if the int-valued register is 0 */
+  case class reljz(n: Int, r: String) extends Instruction {
+    override def action() = {
+      if (getIntValue(r) == 0) goto(instructionNumber + n)
+      else nextInstruction()
+    }
+  }
+
+  /* jpos instruction: jumps to the nth instruction if the int-valued register is positive */
+  case class jpos(n: Int, r: String) extends Instruction {
+    override def action() = {
+      if (getIntValue(r) > 0) goto(n)
+      else nextInstruction()
+    }
+  }
+  /* reljpos instruction: jumps to the nth instruction if the int-valued register is positive */
+  case class reljpos(n: Int, r: String) extends Instruction {
+    override def action() = {
+      if (getIntValue(r) > 0) goto(instructionNumber + n)
+      else nextInstruction()
+    }
+  }
+
+  /* jneg instruction: jumps to the nth instruction if the int-valued register is negative */
+  case class jneg(n: Int, r: String) extends Instruction {
+    override def action() = {
+      if (getIntValue(r) < 0) goto(n)
+      else nextInstruction()
+    }
+  }
+  /* reljneg instruction: jumps to the nth instruction if the int-valued register is negative */
+  case class reljneg(n: Int, r: String) extends Instruction {
+    override def action() = {
+      if (getIntValue(r) < 0) goto(instructionNumber + n)
+      else nextInstruction()
+    }
+  }
+
   /* kill instruction: ends program execution */
   object kill extends Instruction {
     override def action() = {} // i.e. do nothing
@@ -102,6 +147,22 @@ class Pike {
       return reg.asInstanceOf[DoubleRegister].value
     else
       throw new RuntimeException(r + " does not contain a floating point value.")
+  }
+
+  /* iprint instruction: prints integer in register */
+  case class iprint(r: String) extends Instruction {
+    def action() = {
+      println(getIntValue(r))
+      nextInstruction()
+    }
+  }
+
+  /*fprint instruction: prints floating point value in register */
+  case class fprint(r: String) extends Instruction {
+    def action() = {
+      println(getDoubleValue(r))
+      nextInstruction()
+    }
   }
 
   /* add instruction: adds integers from 2 registers and puts the result in r3 */
@@ -127,6 +188,11 @@ class Pike {
   /* inc instruction: increments the integer value from a register by 1 */
   case class inc(r1: String) extends Instruction {
     override def action() = mov(getIntValue(r1) + 1, r1).action()
+  }
+
+  /* dec instruction: decrements the integer value from a register by 1 */
+  case class dec(r1: String) extends Instruction {
+    override def action() = mov(getIntValue(r1) - 1, r1).action()
   }
 
   /* fadd instruction: adds floating point numbers from 2 registers and puts the result in r3 */

@@ -9,9 +9,7 @@ class TestSuite {
   val epsilon: Double = 1e-8
 
   @Test
-  def movTests() = {
-    movProgram.runner
-  }
+  def movTests() = movProgram.runner
   object movProgram extends Pike {
     def runner() = {
       mov(1, "r0")
@@ -25,6 +23,22 @@ class TestSuite {
       assertEquals(-1.00000006, getDoubleValue("r2"), epsilon)
       assertEquals(10000, getIntValue("r5"))
       assertEquals(-12345, getIntValue("r15"))
+    }
+  }
+
+  @Test
+  def accumTest() = accumProgram.runner
+  object accumProgram extends Pike {
+    def runner() = {
+      /* computes 10+9+...+0 and puts it in r0 */
+      mov(0, "r0") // summation register
+      mov(10, "r1") // temp register
+      add("r0", "r1", "r0") // relative jump lands here
+      dec("r1")
+      iprint("r1")
+      reljpos(-3, "r1") // relative jump 3 instructions back
+      run
+      assertEquals(55, getIntValue("r0"))
     }
   }
 
