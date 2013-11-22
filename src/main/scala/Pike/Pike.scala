@@ -5,10 +5,6 @@ import scala.collection.mutable.MutableList
 
 class Pike {
 
-  /* Register information  */
-  private val NumRegisters: Int = 16
-  private val registers = new Array[Register](NumRegisters)
-
   /* Runtime variables */
   private var shouldKill = false
   private var instructionsRead = false
@@ -16,11 +12,32 @@ class Pike {
   private var instructions = new MutableList[Instruction]()
   private var labels = new HashMap[String, Int]()
 
+  
+  /* Register information  */
+  private val NumRegisters: Int = 10 // Number of general purpose registers
+  private val registers = new Array[Register](NumRegisters)
+  
   /* Register data structures */
-  abstract sealed class Register
+  abstract sealed class Register {
+    val name = "undefined name"
+  }
   case class IntRegister(value: Int) extends Register
   case class DoubleRegister(value: Double) extends Register
 
+  /* Register instances - these lets you write r0 instead of "r0" */
+  // This is somewhat of a bad hack.
+  object r0 extends Register { override val name = "r0" }
+  object r1 extends Register { override val name = "r1" }
+  object r2 extends Register { override val name = "r2" }
+  object r3 extends Register { override val name = "r3" }
+  object r4 extends Register { override val name = "r4" }
+  object r5 extends Register { override val name = "r5" }
+  object r6 extends Register { override val name = "r6" }
+  object r7 extends Register { override val name = "r7" }
+  object r8 extends Register { override val name = "r8" }
+  object r9 extends Register { override val name = "r9" }  
+  implicit def reg2str(r: Register): String = r.name
+  
   /* Register helper functions */
   private def getRegister(rName: String): Register = {
     return registers(getRegisterIndex(rName))
@@ -67,7 +84,7 @@ class Pike {
 
   /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, rName: String) extends Instruction {
-    override def action() = {
+    override def action() = {      
       val newReg: Register = makeRegister(value)
       registers(getRegisterIndex(rName)) = newReg
       nextInstruction()
@@ -80,7 +97,8 @@ class Pike {
       case x: Float => new DoubleRegister(x)
       case x: Double => new DoubleRegister(x)
       case x: String => makeRegister(getValue(x))
-      case _ => throw new RuntimeException("Illegal register value: " + value)
+      case x: Register => makeRegister(getValue(x.name))
+      case _ => throw new RuntimeException("Illegal register value: " + value.toString)
     }
   }
   private def getValue(r: String): Any = {
