@@ -60,4 +60,22 @@ class TestSuite {
     }
   }
 
+  @Test
+  def valueMadness = valueMadnessProgram.runner
+  object valueMadnessProgram extends Pike {
+    def runner() = {
+      mov(15, r0)
+      mov(r0, r1)
+      mov(r0, r2)
+      add(r1, r2, r3) // r3 has 30 in it now
+      store(r2, 0) // mem(0) = r2 = 15
+      store(r3, 1) // mem(1) = r3 = 30
+      load(0, r5) // r5 = mem(0) = 15
+      load(1, r6) // r6 = mem(1) = 30
+      run
+      assertEquals(15, getIntValue(r5))
+      assertEquals(30, getIntValue(r6))
+    }
+  }
+
 }

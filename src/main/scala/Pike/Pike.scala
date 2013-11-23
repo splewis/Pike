@@ -13,23 +13,27 @@ class Pike {
   private var labels = new HashMap[String, Int]()
 
   /* Register information  */
-  private val NumRegisters: Int = 10 // Number of general purpose registers allocated
-  private val registers = new Array[Register](NumRegisters)
+  val MemSize = 8096
+  private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
+  private val registers = new Array[Register](GeneralPurposeRegisters + 1 + MemSize)
 
   /* Register data structures */
-  abstract sealed class Register {
-    val name = "undefined name"
-  }
+  abstract class Register
   case class IntRegister(value: Int) extends Register
   case class DoubleRegister(value: Double) extends Register
 
-  /* Register instances - these lets you write r0 instead of "r0" */
-  // This is somewhat of a bad hack.
-  class RegisterContainer(val str: String, val index: Int) {
+  abstract class Container(name: String, index: Int) {
+    // Might as well simulate getting random values!
+    registers(index) = new IntRegister((Math.random() * Integer.MAX_VALUE).asInstanceOf[Int])
     def getRegister(): Register = registers(index)
     def setRegister(r: Register): Unit = (registers(index) = r)
+    override def toString = name
   }
 
+  case class RegisterContainer(name: String, index: Int) extends Container(name, index)
+  case class MemoryContainer(name: String, index: Int) extends Container(name, index)
+
+  /* Register instances */
   var r0 = new RegisterContainer("r0", 0)
   var r1 = new RegisterContainer("r1", 1)
   var r2 = new RegisterContainer("r2", 2)
@@ -40,6 +44,9 @@ class Pike {
   var r7 = new RegisterContainer("r7", 7)
   var r8 = new RegisterContainer("r8", 8)
   var r9 = new RegisterContainer("r9", 9)
+  var rsp = new RegisterContainer("rsp", 10)
+
+  private val memory = new Array[MemoryContainer](MemSize)
 
   /* Helper functions for the runtime system */
   private def nextInstruction(): Unit = {
@@ -70,10 +77,38 @@ class Pike {
     def action(): Unit
   }
 
+  /* conversion of Int->the memory cell index by the Int, used for store command */
+  implicit def memoryLocation2Container(index: Int): MemoryContainer = {
+    val result = memory(index)
+    if (result == null)
+      memory(index) = new MemoryContainer("mem@" + index, GeneralPurposeRegisters + index + 1)
+    return memory(index)
+  }
+
+  /* store instruction: puts the value into a memory cell */
+  case class store(value: Any, r: MemoryContainer) extends Instruction {
+    if (!legalType(value))
+      readErr("Illegal value: " + value)
+    override def action() = {
+      val newReg: Register = makeRegister(value)
+      r.setRegister(newReg)
+      nextInstruction()
+    }
+  }
+
+  /* load instruction: loads a value from a memory cell into a register */
+  case class load(index: Int, r: RegisterContainer) extends Instruction {
+    override def action() = {
+      val newReg: Register = makeRegister(memory(index))
+      r.setRegister(newReg)
+      nextInstruction()
+    }
+  }
+
   /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, r: RegisterContainer) extends Instruction {
     if (!legalType(value))
-      readErr("Illegal value")
+      readErr("Illegal value: " + value)
     override def action() = {
       val newReg: Register = makeRegister(value)
       r.setRegister(newReg)
@@ -96,7 +131,7 @@ class Pike {
       case x: Float => new DoubleRegister(x)
       case x: Double => new DoubleRegister(x)
       case x: Register => makeRegister(getValue(x))
-      case x: RegisterContainer => makeRegister(x.getRegister)
+      case x: Container => makeRegister(x.getRegister)
       case _ => throw new RuntimeException("Illegal register value: " + value.toString)
     }
   }
@@ -174,7 +209,6 @@ class Pike {
     } catch {
       case e: NoSuchElementException => readErr("no label named " + labelName)
     }
-
   }
 
   /* kill instruction: ends program execution */
