@@ -15,7 +15,8 @@ class Pike {
   /* Register information  */
   val MemSize = 8096
   private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
-  private val registers = new Array[Register](GeneralPurposeRegisters + 1 + MemSize)
+  private val MemStartIndex = GeneralPurposeRegisters + 1 // +1 for rsp
+  private val registers = new Array[Register](MemStartIndex + MemSize)
 
   /* Register data structures */
   abstract class Register
@@ -81,7 +82,7 @@ class Pike {
   implicit def memoryLocation2Container(index: Int): MemoryContainer = {
     val result = memory(index)
     if (result == null)
-      memory(index) = new MemoryContainer("mem@" + index, GeneralPurposeRegisters + index + 1)
+      memory(index) = new MemoryContainer("mem@" + index, MemStartIndex + index)
     return memory(index)
   }
 
@@ -242,7 +243,7 @@ class Pike {
     }
   }
 
-  /*fprint instruction: prints floating point value in register */
+  /* fprint instruction: prints floating point value in register */
   case class fprint(r: RegisterContainer) extends Instruction {
     def action() = {
       println(getDoubleValue(r))
@@ -252,7 +253,9 @@ class Pike {
 
   /* add instruction: adds integers from 2 registers and puts the result in r3 */
   case class add(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
-    override def action() = mov(getIntValue(r1) + getIntValue(r2), r3).action()
+    override def action() = {
+      mov(getIntValue(r1) + getIntValue(r2), r3).action()
+    }
   }
 
   /* sub instruction: subtracts integers from 2 registers and puts the result in r3 */

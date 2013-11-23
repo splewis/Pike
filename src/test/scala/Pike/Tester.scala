@@ -27,6 +27,44 @@ class TestSuite {
   }
 
   @Test
+  def integerTest() = integerProgram.runner
+  object integerProgram extends Pike {
+    def runner(): Unit = {
+      mov(2, r0) // r0 = 2
+      mov(3, r1) // r1 = 3
+      add(r0, r1, r2) // r2 = 2+3 = 5
+      mul(r1, r2, r3) // r3 = 3*5 = 15
+      div(r3, r1, r4) // r4 = 15/3 = 5
+      mod(r3, r0, r5) // r5 = 15%2 = 1
+      run
+      assertEquals(2, getIntValue(r0))
+      assertEquals(3, getIntValue(r1))
+      assertEquals(5, getIntValue(r2))
+      assertEquals(15, getIntValue(r3))
+      assertEquals(5, getIntValue(r4))
+      assertEquals(1, getIntValue(r5))
+    }
+  }
+
+  @Test
+  def doubleTest() = doubleProgram.runner
+  object doubleProgram extends Pike {
+    def runner() = {
+      mov(2.5, r0) // r0 = 2.5
+      mov(3.5, r1) // r1 = 3.5
+      fadd(r0, r1, r2) // r2 = 2.5+3.5 = 6.0
+      fmul(r1, r2, r3) // r3 = 3.5*6.0 = 21.0
+      fdiv(r3, r1, r4) // r4 = 21.0/3.5 = 6.0
+      run
+      assertEquals(2.5, getDoubleValue(r0), epsilon)
+      assertEquals(3.5, getDoubleValue(r1), epsilon)
+      assertEquals(6.0, getDoubleValue(r2), epsilon)
+      assertEquals(21.0, getDoubleValue(r3), epsilon)
+      assertEquals(6.0, getDoubleValue(r4), epsilon)
+    }
+  }
+
+  @Test
   def accumTest() = accumProgram.runner
   object accumProgram extends Pike {
     def runner() = {
