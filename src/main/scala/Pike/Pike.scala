@@ -24,8 +24,7 @@ class Pike {
   case class DoubleRegister(value: Double) extends Register
 
   abstract class Container(name: String, index: Int) {
-    // Might as well simulate getting random values!
-    registers(index) = new IntRegister((Math.random() * Integer.MAX_VALUE).asInstanceOf[Int])
+    registers(index) = new IntRegister(0)
     def getRegister(): Register = registers(index)
     def setRegister(r: Register): Unit = (registers(index) = r)
     override def toString = name
