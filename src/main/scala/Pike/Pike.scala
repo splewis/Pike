@@ -3,7 +3,7 @@ package Pike
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-class Pike {
+class Pike(val MemSize: Int = 1024) {
 
   /* Runtime variables */
   private var shouldKill = false
@@ -13,16 +13,16 @@ class Pike {
   private var labels = new HashMap[String, Int]()
 
   /* Register information  */
-  val MemSize = 8096
   private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
   private val MemStartIndex = GeneralPurposeRegisters + 1 // +1 for rsp
   private val registers = new Array[Register](MemStartIndex + MemSize)
 
-  /* Register data structures */
+  /** Internal Register data structure */
   abstract class Register
   case class IntRegister(value: Int) extends Register
   case class DoubleRegister(value: Double) extends Register
 
+  /** Internal storage for memory/register references. */
   abstract class Container(name: String, index: Int) {
     registers(index) = new IntRegister(0)
     def getRegister(): Register = registers(index)
@@ -60,14 +60,14 @@ class Pike {
       instructions(instructionNumber).action()
   }
 
-  /* run command: begins program execution - this is NOT an instruction! */
+  /** run command: begins program execution - this is NOT an instruction! */
   def run(): Unit = {
     instructionsRead = true // flag to prevent more instructions from being added to list
     goto(0)
   }
 
-  /*
-   * Instruction data structures. 
+  /**
+   * Internal Instruction data structures.
    *  - Each Instruction should extend Instruction and override the action method.
    *  - the end of action should specify how to continue after running the instruction
    */
@@ -77,7 +77,7 @@ class Pike {
     def action(): Unit
   }
 
-  /* conversion of Int->the memory cell index by the Int, used for store command */
+  /** conversion of Int->the memory cell index by the Int, used for store command */
   implicit def memoryLocation2Container(index: Int): MemoryContainer = {
     val result = memory(index)
     if (result == null)
@@ -85,7 +85,7 @@ class Pike {
     return memory(index)
   }
 
-  /* store instruction: puts the value into a memory cell */
+  /** store instruction: puts the value into a memory cell */
   case class store(value: Any, r: MemoryContainer) extends Instruction {
     if (!legalType(value))
       readErr("Illegal value: " + value)
@@ -96,7 +96,7 @@ class Pike {
     }
   }
 
-  /* load instruction: loads a value from a memory cell into a register */
+  /** load instruction: loads a value from a memory cell into a register */
   case class load(index: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       val newReg: Register = makeRegister(memory(index))
@@ -105,7 +105,7 @@ class Pike {
     }
   }
 
-  /* mov instruction: moves a int/double/string into a register */
+  /** mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, r: RegisterContainer) extends Instruction {
     if (!legalType(value))
       readErr("Illegal value: " + value)
@@ -116,7 +116,7 @@ class Pike {
     }
   }
 
-  /* Internal register/value helpers */
+  /** Internal register/value helpers */
   private def legalType(value: Any): Boolean = {
     return (value.isInstanceOf[Int] ||
       value.isInstanceOf[Double] ||
@@ -146,19 +146,19 @@ class Pike {
     }
   }
 
-  /* jmp instruction: jumps to the nth instruction and starts running at it */
+  /** jmp instruction: jumps to the nth instruction and starts running at it */
   case class jmp(n: Int) extends Instruction {
     override def action() = goto(n)
   }
 
-  /* jz instruction: jumps to the nth instruction if the int-valued register is 0 */
+  /** jz instruction: jumps to the nth instruction if the int-valued register is 0 */
   case class jz(n: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       if (getIntValue(r) == 0) goto(n)
       else nextInstruction()
     }
   }
-  /* reljz instruction: jumps ahead n instruction if the int-valued register is 0 */
+  /** reljz instruction: jumps ahead n instruction if the int-valued register is 0 */
   case class reljz(n: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       if (getIntValue(r) == 0) goto(instructionNumber + n)
@@ -166,14 +166,14 @@ class Pike {
     }
   }
 
-  /* jpos instruction: jumps to the nth instruction if the int-valued register is positive */
+  /** jpos instruction: jumps to the nth instruction if the int-valued register is positive */
   case class jpos(n: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       if (getIntValue(r) > 0) goto(n)
       else nextInstruction()
     }
   }
-  /* reljpos instruction: jumps to the nth instruction if the int-valued register is positive */
+  /** reljpos instruction: jumps to the nth instruction if the int-valued register is positive */
   case class reljpos(n: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       if (getIntValue(r) > 0) goto(instructionNumber + n)
@@ -181,14 +181,14 @@ class Pike {
     }
   }
 
-  /* jneg instruction: jumps to the nth instruction if the int-valued register is negative */
+  /** jneg instruction: jumps to the nth instruction if the int-valued register is negative */
   case class jneg(n: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       if (getIntValue(r) < 0) goto(n)
       else nextInstruction()
     }
   }
-  /* reljneg instruction: jumps to the nth instruction if the int-valued register is negative */
+  /** reljneg instruction: jumps to the nth instruction if the int-valued register is negative */
   case class reljneg(n: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
       if (getIntValue(r) < 0) goto(instructionNumber + n)
@@ -196,13 +196,13 @@ class Pike {
     }
   }
 
-  /* label instruction: names a point in the code */
+  /** label instruction: names a point in the code */
   case class label(name: String) extends Instruction {
     labels(name) = instructions.size // current line number in reading
     override def action() = nextInstruction()
   }
 
-  /* implicit conversion that allows jumps to labels*/
+  /** implicit conversion that allows jumps to labels*/
   implicit def label2Line(labelName: String) = {
     try {
       labels(labelName)
@@ -211,12 +211,12 @@ class Pike {
     }
   }
 
-  /* kill instruction: ends program execution */
+  /** kill instruction: ends program execution */
   object kill extends Instruction {
     override def action() = {} // i.e. do nothing
   }
 
-  /* Helper function for int operations */
+  /** Internal helper function for int operations */
   protected def getIntValue(r: RegisterContainer): Int = {
     val reg = r.getRegister()
     if (reg.isInstanceOf[IntRegister])
@@ -225,7 +225,7 @@ class Pike {
       runErr(reg + " does not contain an integer.")
   }
 
-  /* Helper function for double operations */
+  /** Internal helper function for double operations */
   protected def getDoubleValue(r: RegisterContainer): Double = {
     val reg: Register = r.getRegister
     if (reg.isInstanceOf[DoubleRegister])
@@ -234,7 +234,7 @@ class Pike {
       runErr(r + " does not contain a floating point value.")
   }
 
-  /* iprint instruction: prints integer in register */
+  /** iprint instruction: prints integer in register */
   case class iprint(r: RegisterContainer) extends Instruction {
     def action() = {
       println(getIntValue(r))
@@ -242,7 +242,7 @@ class Pike {
     }
   }
 
-  /* fprint instruction: prints floating point value in register */
+  /** fprint instruction: prints floating point value in register */
   case class fprint(r: RegisterContainer) extends Instruction {
     def action() = {
       println(getDoubleValue(r))
@@ -250,59 +250,59 @@ class Pike {
     }
   }
 
-  /* add instruction: adds integers from 2 registers and puts the result in r3 */
+  /** add instruction: adds integers from 2 registers and puts the result in r3 */
   case class add(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = {
       mov(getIntValue(r1) + getIntValue(r2), r3).action()
     }
   }
 
-  /* sub instruction: subtracts integers from 2 registers and puts the result in r3 */
+  /** sub instruction: subtracts integers from 2 registers and puts the result in r3 */
   case class sub(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r1) - getIntValue(r2), r3).action()
   }
 
-  /* mul instruction: multiplies integers from 2 registers and puts the result in r3 */
+  /** mul instruction: multiplies integers from 2 registers and puts the result in r3 */
   case class mul(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r1) * getIntValue(r2), r3).action()
   }
 
-  /* idiv instruction: divides integers from 2 registers and puts the result in r3 */
+  /** idiv instruction: divides integers from 2 registers and puts the result in r3 */
   case class div(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r1) / getIntValue(r2), r3).action()
   }
 
-  /* mod instruction: takes the modulus integers from 2 registers and puts the result in r3 */
+  /** mod instruction: takes the modulus integers from 2 registers and puts the result in r3 */
   case class mod(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r1) % getIntValue(r2), r3).action()
   }
 
-  /* inc instruction: increments the integer value from a register by 1 */
+  /** inc instruction: increments the integer value from a register by 1 */
   case class inc(r: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r) + 1, r).action()
   }
 
-  /* dec instruction: decrements the integer value from a register by 1 */
+  /** dec instruction: decrements the integer value from a register by 1 */
   case class dec(r: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r) - 1, r).action()
   }
 
-  /* fadd instruction: adds floating point numbers from 2 registers and puts the result in r3 */
+  /** fadd instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fadd(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getDoubleValue(r1) + getDoubleValue(r2), r3).action()
   }
 
-  /* fsub instruction: subtracts floating point numbers from 2 registers and puts the result in r3 */
+  /** fsub instruction: subtracts floating point numbers from 2 registers and puts the result in r3 */
   case class fsub(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getDoubleValue(r1) - getDoubleValue(r2), r3).action()
   }
 
-  /* fmul instruction: adds floating point numbers from 2 registers and puts the result in r3 */
+  /** fmul instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fmul(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getDoubleValue(r1) * getDoubleValue(r2), r3).action()
   }
 
-  /* fdiv instruction: adds floating point numbers from 2 registers and puts the result in r3 */
+  /** fdiv instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fdiv(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getDoubleValue(r1) / getDoubleValue(r2), r3).action()
   }
@@ -319,7 +319,7 @@ class Pike {
     throw new RuntimeException(errStr)
   }
 
-  /* Debug/testing/display functions. Not intended to be part of the language. */
+  /* Internal debug/testing/display functions. */
   protected def registerInfo(r: RegisterContainer): String = {
     val reg: Register = r.getRegister
     val titleStr = "Register " + r.name + " info:"
