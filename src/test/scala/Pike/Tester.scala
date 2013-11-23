@@ -36,6 +36,8 @@ class TestSuite {
       mul(r1, r2, r3) // r3 = 3*5 = 15
       div(r3, r1, r4) // r4 = 15/3 = 5
       mod(r3, r0, r5) // r5 = 15%2 = 1
+      add(7, r5, r6) // r6 = 7+1 = 8
+      add(r6, 21, r7) // r7 =8+21 = 29
       run
       assertEquals(2, getIntValue(r0))
       assertEquals(3, getIntValue(r1))
@@ -43,6 +45,8 @@ class TestSuite {
       assertEquals(15, getIntValue(r3))
       assertEquals(5, getIntValue(r4))
       assertEquals(1, getIntValue(r5))
+      assertEquals(8, getIntValue(r6))
+      assertEquals(29, getIntValue(r7))
     }
   }
 

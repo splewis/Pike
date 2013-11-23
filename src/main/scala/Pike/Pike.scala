@@ -15,7 +15,7 @@ class Pike {
   /* Register information  */
   val MemSize = 8096
   private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
-  private val MemStartIndex = GeneralPurposeRegisters + 1 // +1 for rsp
+  private val MemStartIndex = GeneralPurposeRegisters + 2 // +1 for rsp, +1 for tmpRegister
   private val registers = new Array[Register](MemStartIndex + MemSize)
 
   /* Register data structures */
@@ -45,7 +45,8 @@ class Pike {
   var r7 = new RegisterContainer("r7", 7)
   var r8 = new RegisterContainer("r8", 8)
   var r9 = new RegisterContainer("r9", 9)
-  var rsp = new RegisterContainer("rsp", 10)
+  private var tmpRegister = new RegisterContainer("tmp", 10)
+  var rsp = new RegisterContainer("rsp", 11)
 
   private val memory = new Array[MemoryContainer](MemSize)
 
@@ -64,6 +65,7 @@ class Pike {
   /* run command: begins program execution - this is NOT an instruction! */
   def run(): Unit = {
     instructionsRead = true // flag to prevent more instructions from being added to list
+    mov(0, rsp).action()
     goto(0)
   }
 
@@ -106,6 +108,32 @@ class Pike {
     }
   }
 
+  /* storestack instruction: puts something in a register onto the stack */
+  case class storestack(r: RegisterContainer, offset: Int) extends Instruction {
+    override def action() = store(r, getIntValue(rsp) + offset).action()
+  }
+
+  /* loadstack instruction: reads from a offset value on the stack and puts it in a register*/
+  case class loadstack(offset: Int, r: RegisterContainer) extends Instruction {
+    override def action() = load(getIntValue(rsp) + offset, r).action()
+  }
+
+  /* push instruction: pushes value in a register onto the stack */
+  case class push(r: RegisterContainer) extends Instruction {
+    override def action() = {
+      inc(rsp).action()
+      store(r, getIntValue(rsp)).action()
+    }
+  }
+  
+  /* pop instruction: pushes value in a register onto the stack */
+  case class pop(r: RegisterContainer) extends Instruction {
+    override def action() = {
+      load(getIntValue(rsp), r).action()
+      dec(rsp).action()
+    }
+  }
+
   /* mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, r: RegisterContainer) extends Instruction {
     if (!legalType(value))
@@ -127,6 +155,8 @@ class Pike {
   }
 
   private def makeRegister(value: Any): Register = {
+    if(value == null)
+      println("make a null register?!?!")
     value match {
       case x: Int => new IntRegister(x)
       case x: Float => new DoubleRegister(x)
@@ -253,9 +283,17 @@ class Pike {
 
   /* add instruction: adds integers from 2 registers and puts the result in r3 */
   case class add(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
-    override def action() = {
-      mov(getIntValue(r1) + getIntValue(r2), r3).action()
-    }
+    override def action() = mov(getIntValue(r1) + getIntValue(r2), r3).action()
+  }
+
+  /* Helpers to let adding an immediate translate to moving to a scratch register and adding */
+  def add(x: Int, r2: RegisterContainer, r3: RegisterContainer): Unit = {
+    mov(x, tmpRegister)
+    add(tmpRegister, r2, r3)
+  }
+  def add(r1: RegisterContainer, x: Int, r3: RegisterContainer): Unit = {
+    mov(x, tmpRegister)
+    add(r1, tmpRegister, r3)
   }
 
   /* sub instruction: subtracts integers from 2 registers and puts the result in r3 */
