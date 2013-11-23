@@ -13,7 +13,7 @@ object SquareSummer extends Pike {
     label("loop")
     mov(r1, r2)
     mul(r2, r2, r2) // r2 * r2 -> r2
-    add(r0, r2, r0) // r0 + r2 -> r2
+    add(r0, r2, r0) // r0 + r2 -> r0
     dec(r1)
     jpos("loop", r1) // jumps to loop label if r1 is positive
     iprint(r0)       // prints integer value in r0
