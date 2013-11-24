@@ -103,27 +103,46 @@ class TestSuite {
   }
 
   @Test
+  def simpleFunction = simpleFunctionProgram.runner
+  object simpleFunctionProgram extends Pike {
+    def runner() = {
+      func("add15")
+      loadstack(1, r0)
+      add(15, r0, r0)
+      ret()
+
+      mov(16, r2)
+      push(r2)
+      call("add15")
+      pop(r2)
+      run
+      assertEquals(31, getIntValue(r0))
+    }
+  }
+
+  @Test
   def sumSq_function = sumSqProgram_func.runner
   object sumSqProgram_func extends Pike {
     def runner() = {
       func("square")
-      loadstack(-1, r0)
+      loadstack(1, r0)
+      iprint(r0)
       mul(r0, r0, r0)
       ret()
-      
+
       mov(0, r1) // summation register
       mov(10, r2) // temp register for i=[1..10]
-      
-      label("loop")      
+
+      label("loop")
       push(r2)
       call("square")
       pop(r2)
       add(r0, r1, r1)
       dec(r2)
       jpos("loop", r2)
-      
+
       mov(r1, r0)
-      run      
+      run
       assertEquals(385, getIntValue(r0))
     }
   }
@@ -158,9 +177,9 @@ class TestSuite {
       pop(r3)
       mov(123.5, r4)
       push(r4)
-      loadstack(0, r5)
+      pop(r5)
       run
-      assertEquals(1, getIntValue(rsp))
+      assertEquals(0, getIntValue(rsp))
       assertEquals(111, getIntValue(r2))
       assertEquals(123, getIntValue(r3))
       assertEquals(123.5, getDoubleValue(r5), epsilon)

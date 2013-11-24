@@ -15,7 +15,7 @@ class Pike(val MemSize: Int = 1024) {
 
   /* Register information  */
   private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
-  private val MemStartIndex = GeneralPurposeRegisters + 2 // +1 for rsp, +1 for tmpRegister
+  private val MemStartIndex = GeneralPurposeRegisters + 3 // +2 for rsp rbp, +1 for tmpRegister
   private val registers = new Array[Register](MemStartIndex + MemSize)
 
   /** Internal Register data structure */
@@ -47,6 +47,7 @@ class Pike(val MemSize: Int = 1024) {
   var r9 = new RegisterContainer("r9", 9)
   private var tmpRegister = new RegisterContainer("tmp", 10)
   var rsp = new RegisterContainer("rsp", 11)
+  var rbp = new RegisterContainer("rbp", 12)
 
   private val memory = new Array[MemoryContainer](MemSize)
 
@@ -61,6 +62,10 @@ class Pike(val MemSize: Int = 1024) {
     val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
     if (!outOfBounds && !shouldKill) {
       val i = instructions(instructionNumber)
+      //      println("start " + i)
+      //      printRegisterInfo(rsp)
+      //      printRegisterInfo(r2)
+      //      println("\n")
       i.action()
       i.next()
     }
@@ -113,15 +118,10 @@ class Pike(val MemSize: Int = 1024) {
     }
   }
 
-  /** storestack instruction: puts something in a register onto the stack */
-  case class storestack(r: RegisterContainer, offset: Int) extends Instruction {
-    override def action() = store(r, getIntValue(rsp) + offset).action()
-  }
-
-  /** loadstack instruction: reads from a offset value on the stack and puts it in a register */
+  /** loadstack instruction: reads a function argument from the stack  (offset=1) is the first argument */
   case class loadstack(offset: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
-      load(getIntValue(rsp) + offset, r).action()
+      load(getIntValue(rbp) + offset - 3, r).action()
     }
   }
 
@@ -246,7 +246,7 @@ class Pike(val MemSize: Int = 1024) {
    *   - r0 is caller saved (it is used for the return value)
    *   - all other registers are callee saved
    */
-  case class func(name: String) extends Instruction {
+  case class func(name: String, stackSpace: Int = 0) extends Instruction {
     functions(name) = instructions.size // current line number in reading
     override def next() = {
       // go to next ret in the code
@@ -259,9 +259,14 @@ class Pike(val MemSize: Int = 1024) {
   /** call instruction */
   case class call(name: String) extends Instruction {
     override def action() = {
+      // put return address on stack
       mov(instructionNumber, tmpRegister).action()
       inc(rsp).action()
       store(tmpRegister, getIntValue(rsp)).action()
+
+      // function prologue:
+      push(rbp).action()
+      mov(rsp, rbp).action()
     }
     override def next() = goto(functions(name))
   }
@@ -269,7 +274,12 @@ class Pike(val MemSize: Int = 1024) {
   /** ret instruction */
   case class ret extends Instruction {
     override def action() = {
-      load(getIntValue(rsp), tmpRegister)
+      // function epilogue:
+      mov(rbp, rsp).action()
+      pop(rbp).action()
+
+      // put return addres in tmpRegister
+      load(getIntValue(rsp), tmpRegister).action()
       dec(rsp).action()
     }
     override def next() = goto(getIntValue(tmpRegister) + 1)
@@ -317,9 +327,19 @@ class Pike(val MemSize: Int = 1024) {
     override def action() = println(getDoubleValue(r))
   }
 
-  /** */
+  /** sprint instruction: prints an immediate string */
   case class sprint(string: String) extends Instruction {
     override def action() = println(string)
+  }
+
+  /** float2int instruction: truncates floating point value in r1 and puts the result in r2 */
+  case class float2int(r1: RegisterContainer, r2: RegisterContainer) extends Instruction {
+    override def action() = mov(getDoubleValue(r1).asInstanceOf[Int], r2).action()
+  }
+
+  /** int2float instruction: converts int value in r1 and puts the floating point result in r2 */
+  case class int2float(r1: RegisterContainer, r2: RegisterContainer) extends Instruction {
+    override def action() = mov(getIntValue(r1).asInstanceOf[Double], r2).action()
   }
 
   /** add instruction: adds integers from 2 registers and puts the result in r3 */
@@ -400,9 +420,9 @@ class Pike(val MemSize: Int = 1024) {
   }
 
   /* Internal debug/testing/display functions. */
-  protected def registerInfo(r: RegisterContainer): String = {
+  protected def registerInfo(r: Container): String = {
     val reg: Register = r.getRegister
-    val titleStr = "Register " + r.name + " info:"
+    val titleStr = "Register " + r + " info:"
     val infoStr = {
       reg match {
         case IntRegister(data) => "Type=Int, Data=" + data
@@ -413,7 +433,7 @@ class Pike(val MemSize: Int = 1024) {
     return titleStr + "\n" + infoStr
   }
 
-  protected def printRegisterInfo(r: RegisterContainer): Unit = {
+  protected def printRegisterInfo(r: Container): Unit = {
     println(registerInfo(r))
   }
 
