@@ -11,6 +11,7 @@ class Pike(val MemSize: Int = 1024) {
   private var instructionNumber = 0
   private var instructions = new MutableList[Instruction]()
   private var labels = new HashMap[String, Int]()
+  private var unresolvedLabels = new HashMap[Int, String]()
   private var functions = new HashMap[String, Int]()
 
   /* Register information  */
@@ -59,13 +60,18 @@ class Pike(val MemSize: Int = 1024) {
   /* Internal runtime function - this is where the magic happens! */
   private def goto(n: Int): Unit = {
     instructionNumber = n
+    if (instructionNumber < 0) {
+      // then n was a unresolved label ID, try to look it up
+      try {
+        instructionNumber = unresolvedLabels(instructionNumber)
+      } catch {
+        case e: NoSuchElementException => runErr("missing label")
+      }
+    }
+
     val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
     if (!outOfBounds && !shouldKill) {
       val i = instructions(instructionNumber)
-      //      println("start " + i)
-      //      printRegisterInfo(rsp)
-      //      printRegisterInfo(r2)
-      //      println("\n")
       i.action()
       i.next()
     }
@@ -189,7 +195,7 @@ class Pike(val MemSize: Int = 1024) {
   case class jmp(n: Int) extends Instruction {
     override def next() = goto(n)
   }
-
+  
   /** jz instruction: jumps to the nth instruction if the int-valued register is 0 */
   case class jz(n: Int, r: RegisterContainer) extends Instruction {
     override def next() = {
@@ -284,13 +290,20 @@ class Pike(val MemSize: Int = 1024) {
     }
     override def next() = goto(getIntValue(tmpRegister) + 1)
   }
-
+  
   /** implicit conversion that allows jumps to labels */
-  implicit def label2Line(labelName: String) = {
+  implicit def label2Line(labelName: String): Int = {
     try {
       labels(labelName)
     } catch {
-      case e: NoSuchElementException => readErr("no label named " + labelName)
+      case e: NoSuchElementException => {
+        // picking a magic negative number for the ID, when we see a goto(n) 
+        // where n<0 we will know to check the unresolvedLabels map for 
+        // the correct line number.
+        val ID: Int = -unresolvedLabels.size - 1
+        unresolvedLabels(ID) = labelName
+        return ID
+      }
     }
   }
 
