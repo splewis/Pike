@@ -2,6 +2,7 @@ package Pike
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
+import org.hamcrest.core.IsInstanceOf
 
 class Pike(val MemSize: Int = 1024) {
 
@@ -11,6 +12,7 @@ class Pike(val MemSize: Int = 1024) {
   private var instructionNumber = 0
   private var instructions = new MutableList[Instruction]()
   private var labels = new HashMap[String, Int]()
+  private var functions = new HashMap[String, Int]()
 
   /* Register information  */
   private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
@@ -57,8 +59,11 @@ class Pike(val MemSize: Int = 1024) {
   private def goto(n: Int): Unit = {
     instructionNumber = n
     val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
-    if (!outOfBounds && !shouldKill)
-      instructions(instructionNumber).action()
+    if (!outOfBounds && !shouldKill) {
+      val i = instructions(instructionNumber)
+      i.action()
+      i.next()
+    }
   }
 
   /** run command: begins program execution - this is NOT an instruction! */
@@ -69,16 +74,17 @@ class Pike(val MemSize: Int = 1024) {
 
   /**
    * Internal Instruction data structures.
-   *  - Each Instruction should extend Instruction and override the action method.
-   *  - the end of action should specify how to continue after running the instruction
-   *  - when overriding be careful when calling other action methods, as they might 
-   *    call to the next instruction. In general, most action method should call
-   *    nextInstruction() exactly once.
+   *  - Each Instruction should extend Instruction
+   *  - the action method specifies what it should do at runtime,
+   *      it defaults to doing nothing
+   *  - the next method specifies how to continue when the instruction is done,
+   *      it defaults to going to the next instructions
    */
   abstract class Instruction {
     if (!instructionsRead)
       instructions += this
-    def action(): Unit
+    def action(): Unit = {}
+    def next(): Unit = nextInstruction()
   }
 
   /** conversion of Int->the memory cell index by the Int, used for store command */
@@ -96,7 +102,6 @@ class Pike(val MemSize: Int = 1024) {
     override def action() = {
       val newReg: Register = makeRegister(value)
       r.setRegister(newReg)
-      nextInstruction()
     }
   }
 
@@ -105,7 +110,6 @@ class Pike(val MemSize: Int = 1024) {
     override def action() = {
       val newReg: Register = makeRegister(memory(index))
       r.setRegister(newReg)
-      nextInstruction()
     }
   }
 
@@ -122,16 +126,15 @@ class Pike(val MemSize: Int = 1024) {
   /** push instruction: pushes value in a register onto the stack */
   case class push(r: RegisterContainer) extends Instruction {
     override def action() = {
-      rsp.setRegister(new IntRegister(getIntValue(rsp) + 1))
+      inc(rsp).action()
       store(r, getIntValue(rsp)).action()
     }
   }
 
   /** pop instruction: pushes value in a register onto the stack */
   case class pop(r: RegisterContainer) extends Instruction {
-    override def action() = {      
-      val newReg: Register = makeRegister(memory(getIntValue(rsp)))
-      r.setRegister(newReg)
+    override def action() = {
+      load(getIntValue(rsp), r).action()
       dec(rsp).action()
     }
   }
@@ -143,7 +146,6 @@ class Pike(val MemSize: Int = 1024) {
     override def action() = {
       val newReg: Register = makeRegister(value)
       r.setRegister(newReg)
-      nextInstruction()
     }
   }
 
@@ -183,19 +185,19 @@ class Pike(val MemSize: Int = 1024) {
 
   /** jmp instruction: jumps to the nth instruction and starts running at it */
   case class jmp(n: Int) extends Instruction {
-    override def action() = goto(n)
+    override def next() = goto(n)
   }
 
   /** jz instruction: jumps to the nth instruction if the int-valued register is 0 */
   case class jz(n: Int, r: RegisterContainer) extends Instruction {
-    override def action() = {
+    override def next() = {
       if (getIntValue(r) == 0) goto(n)
       else nextInstruction()
     }
   }
   /** reljz instruction: jumps ahead n instruction if the int-valued register is 0 */
   case class reljz(n: Int, r: RegisterContainer) extends Instruction {
-    override def action() = {
+    override def next() = {
       if (getIntValue(r) == 0) goto(instructionNumber + n)
       else nextInstruction()
     }
@@ -203,14 +205,14 @@ class Pike(val MemSize: Int = 1024) {
 
   /** jpos instruction: jumps to the nth instruction if the int-valued register is positive */
   case class jpos(n: Int, r: RegisterContainer) extends Instruction {
-    override def action() = {
+    override def next() = {
       if (getIntValue(r) > 0) goto(n)
       else nextInstruction()
     }
   }
   /** reljpos instruction: jumps to the nth instruction if the int-valued register is positive */
   case class reljpos(n: Int, r: RegisterContainer) extends Instruction {
-    override def action() = {
+    override def next() = {
       if (getIntValue(r) > 0) goto(instructionNumber + n)
       else nextInstruction()
     }
@@ -218,14 +220,14 @@ class Pike(val MemSize: Int = 1024) {
 
   /** jneg instruction: jumps to the nth instruction if the int-valued register is negative */
   case class jneg(n: Int, r: RegisterContainer) extends Instruction {
-    override def action() = {
+    override def next() = {
       if (getIntValue(r) < 0) goto(n)
       else nextInstruction()
     }
   }
   /** reljneg instruction: jumps to the nth instruction if the int-valued register is negative */
   case class reljneg(n: Int, r: RegisterContainer) extends Instruction {
-    override def action() = {
+    override def next() = {
       if (getIntValue(r) < 0) goto(instructionNumber + n)
       else nextInstruction()
     }
@@ -234,7 +236,38 @@ class Pike(val MemSize: Int = 1024) {
   /** label instruction: names a point in the code */
   case class label(name: String) extends Instruction {
     labels(name) = instructions.size // current line number in reading
-    override def action() = nextInstruction()
+  }
+
+  /** func instruction: names a function in the code */
+  case class func(name: String) extends Instruction {
+    functions(name) = instructions.size // current line number in reading
+    override def next() = {
+      // go to next ret in the code
+      while (!instructions(instructionNumber).isInstanceOf[ret])
+        instructionNumber += 1
+      nextInstruction()
+    }
+  }
+
+  /** call instruction */
+  case class call(name: String) extends Instruction {
+    override def action() = {
+      //      println("calling from " + instructionNumber)
+      mov(instructionNumber, tmpRegister).action()
+      inc(rsp).action()
+      store(tmpRegister, getIntValue(rsp)).action()
+    }
+    override def next() = goto(functions(name))
+  }
+
+  /** ret instruction */
+  case class ret extends Instruction {
+    override def action() = {
+      load(getIntValue(rsp), tmpRegister)
+      //      println("returning to " + getIntValue(tmpRegister))
+      dec(rsp).action()
+    }
+    override def next() = goto(getIntValue(tmpRegister))
   }
 
   /** implicit conversion that allows jumps to labels*/
@@ -248,7 +281,7 @@ class Pike(val MemSize: Int = 1024) {
 
   /** kill instruction: ends program execution */
   object kill extends Instruction {
-    override def action() = {} // i.e. do nothing
+    override def next() = {}
   }
 
   /** Internal helper function for int operations */
@@ -271,25 +304,22 @@ class Pike(val MemSize: Int = 1024) {
 
   /** iprint instruction: prints integer in register */
   case class iprint(r: RegisterContainer) extends Instruction {
-    def action() = {
-      println(getIntValue(r))
-      nextInstruction()
-    }
+    override def action() = println(getIntValue(r))
   }
 
   /** fprint instruction: prints floating point value in register */
   case class fprint(r: RegisterContainer) extends Instruction {
-    def action() = {
-      println(getDoubleValue(r))
-      nextInstruction()
-    }
+    override def action() = println(getDoubleValue(r))
+  }
+
+  /** */
+  case class sprint(string: String) extends Instruction {
+    override def action() = println(string)
   }
 
   /** add instruction: adds integers from 2 registers and puts the result in r3 */
   case class add(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
-    override def action() = {
-      mov(getIntValue(r1) + getIntValue(r2), r3).action()
-    }
+    override def action() = mov(getIntValue(r1) + getIntValue(r2), r3).action()
   }
 
   /* Helpers to let adding an immediate translate to moving to a scratch register and adding */
