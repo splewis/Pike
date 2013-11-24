@@ -106,7 +106,6 @@ class TestSuite {
   def sumSq_function = sumSqProgram_func.runner
   object sumSqProgram_func extends Pike {
     def runner() = {
-      // define the square function
       func("square")
       loadstack(-1, r0)
       mul(r0, r0, r0)
@@ -120,12 +119,11 @@ class TestSuite {
       call("square")
       pop(r2)
       add(r0, r1, r1)
-      dec(r1)
-      jpos("loop", r1)
+      dec(r2)
+      jpos("loop", r2)
       
       mov(r1, r0)
-      run
-      
+      run      
       assertEquals(385, getIntValue(r0))
     }
   }
