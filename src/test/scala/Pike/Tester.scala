@@ -119,5 +119,22 @@ class TestSuite {
       assertEquals(30, getIntValue(r6))
     }
   }
+  
+  @Test 
+  def stackLovingTest = stackLovingProgram.runner
+  object stackLovingProgram extends Pike {
+    def runner() = {
+      mov(123, r0)
+      mov(111, r1)
+      push(r0)
+      push(r1)
+      pop(r2)
+      pop(r3)
+      run
+      assertEquals(0, getIntValue(rsp))
+      assertEquals(111, getIntValue(r2))
+      assertEquals(123, getIntValue(r3))
+    }
+  }
 
 }

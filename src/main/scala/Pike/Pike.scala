@@ -64,7 +64,6 @@ class Pike(val MemSize: Int = 1024) {
   /** run command: begins program execution - this is NOT an instruction! */
   def run(): Unit = {
     instructionsRead = true // flag to prevent more instructions from being added to list
-    mov(0, rsp).action()
     goto(0)
   }
 
@@ -72,6 +71,9 @@ class Pike(val MemSize: Int = 1024) {
    * Internal Instruction data structures.
    *  - Each Instruction should extend Instruction and override the action method.
    *  - the end of action should specify how to continue after running the instruction
+   *  - when overriding be careful when calling other action methods, as they might 
+   *    call to the next instruction. In general, most action method should call
+   *    nextInstruction() exactly once.
    */
   abstract class Instruction {
     if (!instructionsRead)
@@ -107,33 +109,34 @@ class Pike(val MemSize: Int = 1024) {
     }
   }
 
-  /* storestack instruction: puts something in a register onto the stack */
+  /** storestack instruction: puts something in a register onto the stack */
   case class storestack(r: RegisterContainer, offset: Int) extends Instruction {
     override def action() = store(r, getIntValue(rsp) + offset).action()
   }
 
-  /* loadstack instruction: reads from a offset value on the stack and puts it in a register*/
+  /** loadstack instruction: reads from a offset value on the stack and puts it in a register*/
   case class loadstack(offset: Int, r: RegisterContainer) extends Instruction {
     override def action() = load(getIntValue(rsp) + offset, r).action()
   }
 
-  /* push instruction: pushes value in a register onto the stack */
+  /** push instruction: pushes value in a register onto the stack */
   case class push(r: RegisterContainer) extends Instruction {
     override def action() = {
-      inc(rsp).action()
+      rsp.setRegister(new IntRegister(getIntValue(rsp) + 1))
       store(r, getIntValue(rsp)).action()
     }
   }
-  
-  /* pop instruction: pushes value in a register onto the stack */
+
+  /** pop instruction: pushes value in a register onto the stack */
   case class pop(r: RegisterContainer) extends Instruction {
-    override def action() = {
-      load(getIntValue(rsp), r).action()
+    override def action() = {      
+      val newReg: Register = makeRegister(memory(getIntValue(rsp)))
+      r.setRegister(newReg)
       dec(rsp).action()
     }
   }
 
-  /* mov instruction: moves a int/double/string into a register */
+  /** mov instruction: moves a int/double/string into a register */
   case class mov(value: Any, r: RegisterContainer) extends Instruction {
     if (!legalType(value))
       readErr("Illegal value: " + value)
@@ -146,6 +149,7 @@ class Pike(val MemSize: Int = 1024) {
 
   /** Internal register/value helpers */
   private def legalType(value: Any): Boolean = {
+    assert(value != null);
     return (value.isInstanceOf[Int] ||
       value.isInstanceOf[Double] ||
       value.isInstanceOf[Float] ||
@@ -154,8 +158,8 @@ class Pike(val MemSize: Int = 1024) {
   }
 
   private def makeRegister(value: Any): Register = {
-    if(value == null)
-      println("make a null register?!?!")
+    if (value == null)
+      return new IntRegister(0)
     value match {
       case x: Int => new IntRegister(x)
       case x: Float => new DoubleRegister(x)
@@ -169,6 +173,7 @@ class Pike(val MemSize: Int = 1024) {
   implicit def container2Register(r: RegisterContainer): Register = r.getRegister
 
   private def getValue(r: Register): Any = {
+    assert(r != null);
     r match {
       case x: IntRegister => x.value
       case x: DoubleRegister => x.value
