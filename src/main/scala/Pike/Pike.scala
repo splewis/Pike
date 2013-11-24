@@ -2,7 +2,6 @@ package Pike
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
-import org.hamcrest.core.IsInstanceOf
 
 class Pike(val MemSize: Int = 1024) {
 
@@ -56,6 +55,7 @@ class Pike(val MemSize: Int = 1024) {
     goto(instructionNumber + 1)
   }
 
+  /* Internal runtime function - this is where the magic happens! */
   private def goto(n: Int): Unit = {
     instructionNumber = n
     val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
@@ -118,9 +118,11 @@ class Pike(val MemSize: Int = 1024) {
     override def action() = store(r, getIntValue(rsp) + offset).action()
   }
 
-  /** loadstack instruction: reads from a offset value on the stack and puts it in a register*/
+  /** loadstack instruction: reads from a offset value on the stack and puts it in a register */
   case class loadstack(offset: Int, r: RegisterContainer) extends Instruction {
-    override def action() = load(getIntValue(rsp) + offset, r).action()
+    override def action() = {
+      load(getIntValue(rsp) + offset, r).action()
+    }
   }
 
   /** push instruction: pushes value in a register onto the stack */
@@ -252,7 +254,6 @@ class Pike(val MemSize: Int = 1024) {
   /** call instruction */
   case class call(name: String) extends Instruction {
     override def action() = {
-      //      println("calling from " + instructionNumber)
       mov(instructionNumber, tmpRegister).action()
       inc(rsp).action()
       store(tmpRegister, getIntValue(rsp)).action()
@@ -264,10 +265,9 @@ class Pike(val MemSize: Int = 1024) {
   case class ret extends Instruction {
     override def action() = {
       load(getIntValue(rsp), tmpRegister)
-      //      println("returning to " + getIntValue(tmpRegister))
       dec(rsp).action()
     }
-    override def next() = goto(getIntValue(tmpRegister))
+    override def next() = goto(getIntValue(tmpRegister) + 1)
   }
 
   /** implicit conversion that allows jumps to labels*/

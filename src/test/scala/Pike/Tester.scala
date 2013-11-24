@@ -103,6 +103,34 @@ class TestSuite {
   }
 
   @Test
+  def sumSq_function = sumSqProgram_func.runner
+  object sumSqProgram_func extends Pike {
+    def runner() = {
+      // define the square function
+      func("square")
+      loadstack(-1, r0)
+      mul(r0, r0, r0)
+      ret()
+      
+      mov(0, r1) // summation register
+      mov(10, r2) // temp register for i=[1..10]
+      
+      label("loop")      
+      push(r2)
+      call("square")
+      pop(r2)
+      add(r0, r1, r1)
+      dec(r1)
+      jpos("loop", r1)
+      
+      mov(r1, r0)
+      run
+      
+      assertEquals(385, getIntValue(r0))
+    }
+  }
+
+  @Test
   def valueMadness = valueMadnessProgram.runner
   object valueMadnessProgram extends Pike {
     def runner() = {
@@ -119,8 +147,8 @@ class TestSuite {
       assertEquals(30, getIntValue(r6))
     }
   }
-  
-  @Test 
+
+  @Test
   def stackLovingTest = stackLovingProgram.runner
   object stackLovingProgram extends Pike {
     def runner() = {
@@ -130,10 +158,14 @@ class TestSuite {
       push(r1)
       pop(r2)
       pop(r3)
+      mov(123.5, r4)
+      push(r4)
+      loadstack(0, r5)
       run
-      assertEquals(0, getIntValue(rsp))
+      assertEquals(1, getIntValue(rsp))
       assertEquals(111, getIntValue(r2))
       assertEquals(123, getIntValue(r3))
+      assertEquals(123.5, getDoubleValue(r5), epsilon)
     }
   }
 
