@@ -240,7 +240,12 @@ class Pike(val MemSize: Int = 1024) {
     labels(name) = instructions.size // current line number in reading
   }
 
-  /** func instruction: names a function in the code */
+  /**
+   * func instruction: names a function in the code
+   *  Conventions:
+   *   - r0 is caller saved (it is used for the return value)
+   *   - all other registers are callee saved
+   */
   case class func(name: String) extends Instruction {
     functions(name) = instructions.size // current line number in reading
     override def next() = {
@@ -270,7 +275,7 @@ class Pike(val MemSize: Int = 1024) {
     override def next() = goto(getIntValue(tmpRegister) + 1)
   }
 
-  /** implicit conversion that allows jumps to labels*/
+  /** implicit conversion that allows jumps to labels */
   implicit def label2Line(labelName: String) = {
     try {
       labels(labelName)
