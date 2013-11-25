@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+import argparse
+import subprocess
+
+
+	header = """
+import Pike.Pike
+
+object prog extends Pike {
+  def main(args: Array[String]): Unit = {
+"""
+	closer = """
+    run
+  }
+}
+
+"""
+
+
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument("file")
+	args = parser.parse_args()
+
+	with open(args.file, 'r') as f:
+		read_data = f.read()
+
+	newfile = args.file + ".scala"
+
+	with open(newfile, 'w') as f:
+		f.write(header)
+		f.write(read_data)
+		f.write(closer)
+
+	subprocess.call(["scala", "-cp", "pike_2.9.1-1.0.jar", newfile])
+
+
+if __name__ == '__main__':
+	main()
