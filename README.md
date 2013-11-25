@@ -78,6 +78,22 @@ object SquareSummer3 extends Pike {
 ```
 
 
+### Language Features
+
+Some things implemented in the language:
+
+- Arithmetic on integer/floating point values
+- Jumps, conditional jumps, branching
+- Labels (and jumps to them)
+- Defining functions and calling them (stack-based execution)
+
+Some things that would make it more interesting:
+- Some way to include other files, or at least functions defined elsewhere
+
+
+
+
+
 ### How to use Pike
 
 The simplest way is with SBT.
