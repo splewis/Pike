@@ -6,18 +6,18 @@ import scala.collection.mutable.MutableList
 class Pike(val MemSize: Int = 1024) {
 
   /* Runtime variables */
-  private var shouldKill = false
-  private var instructionsRead = false
-  private var instructionNumber = 0
-  private var instructions = new MutableList[Instruction]()
-  private var labels = new HashMap[String, Int]()
-  private var unresolvedLabels = new HashMap[Int, String]()
-  private var functions = new HashMap[String, Int]()
+  protected var shouldKill = false
+  protected var instructionsRead = false
+  protected var instructionNumber = 0
+  protected var instructions = new MutableList[Instruction]()
+  protected var labels = new HashMap[String, Int]()
+  protected var unresolvedLabels = new HashMap[Int, String]()
+  protected var functions = new HashMap[String, Int]()
 
   /* Register information  */
-  private val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
-  private val MemStartIndex = GeneralPurposeRegisters + 3 // +2 for rsp rbp, +1 for tmpRegister
-  private val registers = new Array[Register](MemStartIndex + MemSize)
+  protected val GeneralPurposeRegisters: Int = 10 // Number of registers allocated
+  protected val MemStartIndex = GeneralPurposeRegisters + 3 // +2 for rsp rbp, +1 for tmpRegister
+  protected val registers = new Array[Register](MemStartIndex + MemSize)
 
   /** Internal Register data structure */
   abstract class Register
@@ -46,11 +46,11 @@ class Pike(val MemSize: Int = 1024) {
   var r7 = new RegisterContainer("r7", 7)
   var r8 = new RegisterContainer("r8", 8)
   var r9 = new RegisterContainer("r9", 9)
-  private var tmpRegister = new RegisterContainer("tmp", 10)
+  protected var tmpRegister = new RegisterContainer("tmp", 10)
   var rsp = new RegisterContainer("rsp", 11)
   var rbp = new RegisterContainer("rbp", 12)
 
-  private val memory = new Array[MemoryContainer](MemSize)
+  protected val memory = new Array[MemoryContainer](MemSize)
 
   /* Helper functions for the runtime system */
   private def nextInstruction(): Unit = {
