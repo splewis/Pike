@@ -72,7 +72,6 @@ class Pike(val MemSize: Int = 1024) {
     val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
     if (!outOfBounds && !shouldKill) {
       val i = instructions(instructionNumber)
-//      println("rsp: " + getIntValue(rsp) + ", r0:" + getIntValue(r0) + ", " + "r1:" + getIntValue(r1) + ", " + "r2:" + getIntValue(r2) + ", " + "r3:" + getIntValue(r3) + ", " + i + "@" + instructionNumber)
       i.action()
       i.next()
     }
