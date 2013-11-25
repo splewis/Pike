@@ -4,13 +4,13 @@ import argparse
 import subprocess
 
 
-	header = """
+header = """
 import Pike.Pike
 
 object prog extends Pike {
   def main(args: Array[String]): Unit = {
 """
-	closer = """
+closer = """
     run
   }
 }
@@ -21,6 +21,7 @@ object prog extends Pike {
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("file")
+	parser.add_argument("-j", "--jar", default="pike_2.9.1-1.0.jar")
 	args = parser.parse_args()
 
 	with open(args.file, 'r') as f:
@@ -33,7 +34,7 @@ def main():
 		f.write(read_data)
 		f.write(closer)
 
-	subprocess.call(["scala", "-cp", "pike_2.9.1-1.0.jar", newfile])
+	subprocess.call(["scala", "-cp", args.jar, newfile])
 
 
 if __name__ == '__main__':

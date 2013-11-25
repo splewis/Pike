@@ -126,7 +126,6 @@ class TestSuite {
     def runner() = {
       func("square")
       loadstack(1, r0)
-      iprint(r0)
       mul(r0, r0, r0)
       ret()
 
@@ -193,16 +192,16 @@ class TestSuite {
       func("factorial")
       push(r1)
       push(r2)
-      loadstack(1, r0)
+      loadstack(1, r0) // x
       jz("base", r0)
 
       mov(r0, r1)
       mov(r0, r2)
       dec(r1) // x - 1
       push(r1)
-      call("factorial")
+      call("factorial") // fac(x-1) -> r0
       pop(r1)
-      mul(r0, r2, r0)
+      mul(r0, r2, r0) // r0*r2 = fac(x-1)*x -> r0
       jmp("end")
 
       label("base")
@@ -220,6 +219,59 @@ class TestSuite {
       run
 
       assertEquals(5040, getIntValue(r0))
+    }
+  }
+
+  @Test
+  def fibTest = fibProgram.runner
+  object fibProgram extends Pike {
+    def runner() = {
+      func("fib")
+      push(r1)
+      push(r2)
+      push(r3)
+      loadstack(1, r1) // r1 = x
+
+      label("control")
+      mov(r1, r2) // r2 = x - 1
+      dec(r2)
+      mov(r1, r3) // r3 = x - 2
+      dec(r3)
+      dec(r3)
+      jneg("base", r3)
+
+      label("recur") // 8
+      // fib(r2) -> r2
+      push(r2)
+      call("fib")
+      pop(r2)
+      mov(r0, r2)
+      // fib(r3) -> r3
+      push(r3)
+      call("fib")
+      pop(r3)
+      mov(r0, r3)
+      // r0 = r2 + r3
+      add(r2, r3, r0)
+      jmp("end")
+
+      label("base")
+      mov(1, r0)
+      jmp("end")
+
+      label("end")
+      pop(r3)
+      pop(r2)
+      pop(r1)
+      ret()
+
+      mov(9, r1)
+      dec(r6)
+      push(r1)
+      call("fib")
+      pop(r1)
+      run
+      assertEquals(55, getIntValue(r0))
     }
   }
 

@@ -72,6 +72,7 @@ class Pike(val MemSize: Int = 1024) {
     val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
     if (!outOfBounds && !shouldKill) {
       val i = instructions(instructionNumber)
+//      println("rsp: " + getIntValue(rsp) + ", r0:" + getIntValue(r0) + ", " + "r1:" + getIntValue(r1) + ", " + "r2:" + getIntValue(r2) + ", " + "r3:" + getIntValue(r3) + ", " + i + "@" + instructionNumber)
       i.action()
       i.next()
     }
@@ -300,7 +301,7 @@ class Pike(val MemSize: Int = 1024) {
         // picking a magic negative number for the ID, when we see a goto(n) 
         // where n<0 we will know to check the unresolvedLabels map for 
         // the correct line number.
-        val ID: Int = -unresolvedLabels.size - 1
+        val ID: Int = -unresolvedLabels.size - 1 // guaranteed to be negative
         unresolvedLabels(ID) = labelName
         return ID
       }
@@ -313,7 +314,7 @@ class Pike(val MemSize: Int = 1024) {
   }
 
   /** Internal helper function for int operations */
-  protected def getIntValue(r: RegisterContainer): Int = {
+  protected def getIntValue(r: Container): Int = {
     val reg = r.getRegister()
     if (reg.isInstanceOf[IntRegister])
       return reg.asInstanceOf[IntRegister].value
@@ -322,7 +323,7 @@ class Pike(val MemSize: Int = 1024) {
   }
 
   /** Internal helper function for double operations */
-  protected def getDoubleValue(r: RegisterContainer): Double = {
+  protected def getDoubleValue(r: Container): Double = {
     val reg: Register = r.getRegister
     if (reg.isInstanceOf[DoubleRegister])
       return reg.asInstanceOf[DoubleRegister].value
