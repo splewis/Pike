@@ -106,6 +106,8 @@ class Pike(val MemSize: Int = 1024) {
     return memory(index)
   }
 
+  implicit def register2Memory(r: RegisterContainer) = memoryLocation2Container(getIntValue(r))
+  
   /** store instruction: puts the value into a memory cell */
   case class store(value: Any, r: MemoryContainer) extends Instruction {
     if (!legalType(value))
@@ -115,11 +117,13 @@ class Pike(val MemSize: Int = 1024) {
       r.setRegister(newReg)
     }
   }
+  
+  
 
   /** load instruction: loads a value from a memory cell into a register */
-  case class load(index: Int, r: RegisterContainer) extends Instruction {
+  case class load(m: MemoryContainer, r: RegisterContainer) extends Instruction {
     override def action() = {
-      val newReg: Register = makeRegister(memory(index))
+      val newReg: Register = makeRegister(m)
       r.setRegister(newReg)
     }
   }

@@ -147,6 +147,19 @@ class TestSuite {
   }
 
   @Test
+  def memLoaderTest = memLoader.runner
+  object memLoader extends Pike {
+    def runner() = {
+      mov(123, r0) // data
+      mov(1, r1) // index
+      store(r0, r1)
+      load(r1, r2)
+      run
+      assertEquals(123, getIntValue(r2))
+    }
+  }
+
+  @Test
   def valueMadness = valueMadnessProgram.runner
   object valueMadnessProgram extends Pike {
     def runner() = {
