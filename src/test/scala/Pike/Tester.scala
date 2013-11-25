@@ -186,4 +186,41 @@ class TestSuite {
     }
   }
 
+  @Test
+  def factorialTest = factorialProg.runner
+  object factorialProg extends Pike {
+    def runner() = {
+      func("factorial")
+      push(r1)
+      push(r2)
+      loadstack(1, r0)
+      jz("base", r0)
+
+      mov(r0, r1)
+      mov(r0, r2)
+      dec(r1) // x - 1
+      push(r1)
+      call("factorial")
+      pop(r1)
+      mul(r0, r2, r0)
+      jmp("end")
+
+      label("base")
+      mov(1, r0)
+
+      label("end")
+      pop(r2)
+      pop(r1)
+      ret()
+
+      mov(7, r1)
+      push(r1)
+      call("factorial")
+      pop(r1)
+      run
+
+      assertEquals(5040, getIntValue(r0))
+    }
+  }
+
 }
