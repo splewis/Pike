@@ -1,4 +1,4 @@
-package Pike
+package pike
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
@@ -127,7 +127,7 @@ class Pike(val MemSize: Int = 1024) {
   /** loadstack instruction: reads a function argument from the stack  (offset=1) is the first argument */
   case class loadstack(offset: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
-      load(getIntValue(rbp) + offset - 3, r).action()
+      load(getIntValue(rbp) - offset - 1, r).action()
     }
   }
 
@@ -195,7 +195,7 @@ class Pike(val MemSize: Int = 1024) {
   case class jmp(n: Int) extends Instruction {
     override def next() = goto(n)
   }
-  
+
   /** jz instruction: jumps to the nth instruction if the int-valued register is 0 */
   case class jz(n: Int, r: RegisterContainer) extends Instruction {
     override def next() = {
@@ -290,7 +290,7 @@ class Pike(val MemSize: Int = 1024) {
     }
     override def next() = goto(getIntValue(tmpRegister) + 1)
   }
-  
+
   /** implicit conversion that allows jumps to labels */
   implicit def label2Line(labelName: String): Int = {
     try {
@@ -370,7 +370,7 @@ class Pike(val MemSize: Int = 1024) {
     add(r1, tmpRegister, r3)
   }
 
-  /* sub instruction: subtracts integers from 2 registers and puts the result in r3 */
+  /** sub instruction: subtracts integers from 2 registers and puts the result in r3 */
   case class sub(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getIntValue(r1) - getIntValue(r2), r3).action()
   }
@@ -418,6 +418,34 @@ class Pike(val MemSize: Int = 1024) {
   /** fdiv instruction: adds floating point numbers from 2 registers and puts the result in r3 */
   case class fdiv(r1: RegisterContainer, r2: RegisterContainer, r3: RegisterContainer) extends Instruction {
     override def action() = mov(getDoubleValue(r1) / getDoubleValue(r2), r3).action()
+  }
+
+  /** loadStdLib instruction */
+  case class loadStdLib() extends Instruction {
+    func("pow") // computer x^n
+    push(r1)
+    push(r2)
+    loadstack(1, r0) // x, constant
+    loadstack(2, r1) // n, serves as counter
+    jz("pow_zero", r1)
+    dec(r1)
+    mov(r0, r2) // product variable
+
+    label("pow_loop")
+    mul(r2, r0, r2)
+    dec(r1)
+    jpos("pow_loop", r1)
+    jmp("pow_end")
+
+    label("pow_zero")
+    mov(1, r2)
+    jmp("pow_end")
+
+    label("pow_end")
+    mov(r2, r0)
+    pop(r2)
+    pop(r1)
+    ret()
   }
 
   /* Internal exceptions methods for readtime/runtime errors */

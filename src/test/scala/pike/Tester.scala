@@ -1,4 +1,4 @@
-package Pike
+package pike
 
 import org.junit.Assert._
 import org.junit.Test
@@ -272,6 +272,23 @@ class TestSuite {
       pop(r1)
       run
       assertEquals(55, getIntValue(r0))
+    }
+  }
+
+  @Test
+  def powTest = powProgram.runner
+  object powProgram extends Pike {
+    def runner() = {
+      loadStdLib()
+      mov(5, r2)
+      mov(2, r1)
+      push(r2) // arg2
+      push(r1) // arg1
+      call("pow") // computer r2^r1 = 2^5 = 32
+      pop(r1)
+      pop(r2)
+      run
+      assertEquals(32, getIntValue(r0))
     }
   }
 
