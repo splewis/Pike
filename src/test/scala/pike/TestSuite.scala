@@ -279,7 +279,7 @@ class TestSuite {
   def powTest = powProgram.runner
   object powProgram extends Pike {
     def runner() = {
-      loadStdLib()
+      loadStdLib
       mov(5, r2)
       mov(2, r1)
       push(r2) // arg2

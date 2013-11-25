@@ -332,16 +332,21 @@ class Pike(val MemSize: Int = 1024) {
 
   /** iprint instruction: prints integer in register */
   case class iprint(r: RegisterContainer) extends Instruction {
-    override def action() = println(getIntValue(r))
+    override def action() = print(getIntValue(r))
   }
 
   /** fprint instruction: prints floating point value in register */
   case class fprint(r: RegisterContainer) extends Instruction {
-    override def action() = println(getDoubleValue(r))
+    override def action() = print(getDoubleValue(r))
   }
 
   /** sprint instruction: prints an immediate string */
   case class sprint(string: String) extends Instruction {
+    override def action() = print(string)
+  }
+
+  /** sprintln instruction: prints an immediate string and a newline */
+  case class sprintln(string: String) extends Instruction {
     override def action() = println(string)
   }
 
@@ -421,7 +426,7 @@ class Pike(val MemSize: Int = 1024) {
   }
 
   /** loadStdLib instruction */
-  case class loadStdLib() extends Instruction {
+  def loadStdLib: Unit = {
     func("pow") // computer x^n
     push(r1)
     push(r2)
