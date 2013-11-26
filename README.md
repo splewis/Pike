@@ -90,11 +90,6 @@ Some things implemented in the language:
 Some things that would make it more interesting:
 
 - Some way to include other files, or at least functions defined elsewhere
-- Instead of the runtime using recursion (each instruction's apply's method calls a goto which calls the next instructions apply),
-  it could be changed to run in a loop. This would avoid causing the JVM to get a stack overflow on programs that run lots of instructions.
-
-
-
 
 
 ### How to use Pike

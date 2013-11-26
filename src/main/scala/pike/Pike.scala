@@ -54,7 +54,7 @@ class Pike(val MemSize: Int = 1024) {
 
   /* Helper functions for the runtime system */
   private def nextInstruction(): Unit = {
-    goto(instructionNumber + 1)
+    instructionNumber = instructionNumber + 1
   }
 
   /* Internal runtime function - this is where the magic happens! */
@@ -68,19 +68,22 @@ class Pike(val MemSize: Int = 1024) {
         case e: NoSuchElementException => runErr("missing label")
       }
     }
+  }
 
-    val outOfBounds = instructionNumber >= instructions.size || instructionNumber < 0
-    if (!outOfBounds && !shouldKill) {
-      val i = instructions(instructionNumber)
-      i.action()
-      i.next()
-    }
+  protected def inBounds(): Boolean = {
+    return (instructionNumber < instructions.size && instructionNumber >= 0)
   }
 
   /** run command: begins program execution - this is NOT an instruction! */
   def run(): Unit = {
+    instructionNumber = 0
+    shouldKill = false
     instructionsRead = true // flag to prevent more instructions from being added to list
-    goto(0)
+    while (inBounds && !shouldKill) {
+      val i = instructions(instructionNumber)
+      i.action()
+      i.next()
+    }
   }
 
   /**
@@ -107,7 +110,7 @@ class Pike(val MemSize: Int = 1024) {
   }
 
   implicit def register2Memory(r: RegisterContainer) = memoryLocation2Container(getIntValue(r))
-  
+
   /** store instruction: puts the value into a memory cell */
   case class store(value: Any, r: MemoryContainer) extends Instruction {
     if (!legalType(value))
@@ -117,8 +120,6 @@ class Pike(val MemSize: Int = 1024) {
       r.setRegister(newReg)
     }
   }
-  
-  
 
   /** load instruction: loads a value from a memory cell into a register */
   case class load(m: MemoryContainer, r: RegisterContainer) extends Instruction {
