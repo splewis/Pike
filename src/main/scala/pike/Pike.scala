@@ -129,10 +129,17 @@ class Pike(val MemSize: Int = 1024) {
     }
   }
 
-  /** loadstack instruction: reads a function argument from the stack  (offset=1) is the first argument */
+  /** loadstack instruction: reads from the stack with an offset from rbp */
   case class loadstack(offset: Int, r: RegisterContainer) extends Instruction {
     override def action() = {
-      load(getIntValue(rbp) - offset - 1, r).action()
+      load(getIntValue(rbp) + offset - 1, r).action()
+    }
+  }
+
+  /** storestack instruction: stores something to the stack with an offset from rbp */
+  case class storestack(offset: Int, r: RegisterContainer) extends Instruction {
+    override def action() = {
+      store(r, getIntValue(rbp) + offset - 1).action()
     }
   }
 
@@ -267,7 +274,7 @@ class Pike(val MemSize: Int = 1024) {
     }
   }
 
-  /** call instruction */
+  /** call instruction: calls a function and execute its code until it hits a ret */
   case class call(name: String) extends Instruction {
     override def action() = {
       // put return address on stack
@@ -282,7 +289,7 @@ class Pike(val MemSize: Int = 1024) {
     override def next() = goto(functions(name))
   }
 
-  /** ret instruction */
+  /** ret instruction: returns from function to where it was called */
   case class ret extends Instruction {
     override def action() = {
       // function epilogue:
@@ -435,8 +442,8 @@ class Pike(val MemSize: Int = 1024) {
     func("pow") // computer x^n
     push(r1)
     push(r2)
-    loadstack(1, r0) // x, constant
-    loadstack(2, r1) // n, serves as counter
+    loadstack(-1, r0) // x, constant
+    loadstack(-2, r1) // n, serves as counter
     jz("pow_zero", r1)
     dec(r1)
     mov(r0, r2) // product variable

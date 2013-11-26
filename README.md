@@ -56,7 +56,7 @@ object SquareSummer3 extends Pike {
   def main(args: Array[String]) = {
 
     func("square")    // this defines the function square
-    loadstack(1, r0) // reads 1 above rsp (gets the parameter)
+    loadstack(-1, r0) // reads 1 value above the rbp (gets the function parameter)
     mul(r0, r0, r0)
     ret()             // this ends the definition of the square function
 

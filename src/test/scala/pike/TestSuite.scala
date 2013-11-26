@@ -107,7 +107,7 @@ class TestSuite {
   object simpleFunctionProgram extends Pike {
     def runner() = {
       func("add15")
-      loadstack(1, r0)
+      loadstack(-1, r0)
       add(15, r0, r0)
       ret()
 
@@ -125,7 +125,7 @@ class TestSuite {
   object sumSqProgram_func extends Pike {
     def runner() = {
       func("square")
-      loadstack(1, r0)
+      loadstack(-1, r0)
       mul(r0, r0, r0)
       ret()
 
@@ -205,7 +205,7 @@ class TestSuite {
       func("factorial")
       push(r1)
       push(r2)
-      loadstack(1, r0) // x
+      loadstack(-1, r0) // x
       jz("base", r0)
 
       mov(r0, r1)
@@ -243,7 +243,7 @@ class TestSuite {
       push(r1)
       push(r2)
       push(r3)
-      loadstack(1, r1) // r1 = x
+      loadstack(-1, r1) // r1 = x
 
       label("control")
       mov(r1, r2) // r2 = x - 1
@@ -253,7 +253,7 @@ class TestSuite {
       dec(r3)
       jneg("base", r3)
 
-      label("recur") // 8
+      label("recur")
       // fib(r2) -> r2
       push(r2)
       call("fib")
