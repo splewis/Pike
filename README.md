@@ -82,10 +82,11 @@ object SquareSummer3 extends Pike {
 
 Some things implemented in the language:
 
+- 10 general purpose registers (r0 to r9)
 - Arithmetic on integer/floating point values
 - Jumps, conditional jumps, branching
 - Labels (and jumps to them)
-- Defining functions and calling them (stack-based execution)
+- Defining functions and calling them (stack-based execution, the call and ret instructions for functions internally set rsp and rbp registers)
 
 Some things that would make it more interesting:
 
@@ -101,6 +102,8 @@ The simplest way is with SBT.
   cd Pike/
   sbt test
 ```
+
+The command ```sbt package``` will produce a jar that you can add to the classpath to compile with.
 
 You can also import the project to eclipse if you have an updated Scala IDE plugin installed.
 
