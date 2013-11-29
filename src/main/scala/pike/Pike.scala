@@ -103,6 +103,8 @@ class Pike(val MemSize: Int = 1024) {
 
   /** conversion of Int->the memory cell index by the Int, used for store command */
   implicit def memoryLocation2Container(index: Int): MemoryContainer = {
+    if (index < 0 || index >= memory.size)
+      runErr("Can not access memory at " + index)
     val result = memory(index)
     if (result == null)
       memory(index) = new MemoryContainer("mem@" + index, MemStartIndex + index)
@@ -256,6 +258,16 @@ class Pike(val MemSize: Int = 1024) {
   /** label instruction: names a point in the code */
   case class label(name: String) extends Instruction {
     labels(name) = instructions.size // current line number in reading
+  }
+
+  /** readint instruction: reads in an integer from the console and puts it in a register */
+  case class readint(r: RegisterContainer) extends Instruction {
+    override def action() = mov(Console.readInt, r).action()
+  }
+
+  /** readfloat instruction: reads in a floating point value from the console and puts it in a register */
+  case class readfloat(r: RegisterContainer) extends Instruction {
+    override def action() = mov(Console.readDouble, r).action()
   }
 
   /**
