@@ -342,7 +342,7 @@ class Pike(val MemSize: Int = 1024) {
     if (reg.isInstanceOf[IntRegister])
       return reg.asInstanceOf[IntRegister].value
     else
-      runErr(reg + " does not contain an integer.")
+      runErr(r + " does not contain an integer.")
   }
 
   /** Internal helper function for double operations */
@@ -351,7 +351,7 @@ class Pike(val MemSize: Int = 1024) {
     if (reg.isInstanceOf[DoubleRegister])
       return reg.asInstanceOf[DoubleRegister].value
     else
-      runErr(r + " does not contain a floating point value.")
+      runErr(r.toString + " does not contain a floating point value.")
   }
 
   /** iprint instruction: prints integer in register */
