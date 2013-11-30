@@ -51,12 +51,13 @@ object SquareSummer2 extends Pike {
 ```scala
 // We can also add functions to the code
 // Arguments are passed on the stack and the return value is in r0
+// The call and ret instructions internally update the rsp and rbp registers.
 
 object SquareSummer3 extends Pike {
   def main(args: Array[String]) = {
 
     func("square")    // this defines the function square
-    loadstack(-1, r0) // reads 1 value above the rbp (gets the function parameter)
+    loadstack(-1, r0) // reads 1 value below the stack's base pointer (gets the function parameter)
     mul(r0, r0, r0)
     ret()             // this ends the definition of the square function
 
@@ -90,6 +91,7 @@ Some things implemented in the language:
 
 Some things that would make it more interesting:
 
+- The Symbol class could be used to change the label and function naming style a bit
 - Some way to include other files, or at least functions defined elsewhere
 
 
