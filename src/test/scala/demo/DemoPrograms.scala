@@ -4,10 +4,11 @@ import pike._
 
 object DemoPrograms {
   def main(args: Array[String]): Unit = {
-    SimpleDemo.prog()
-    //    PowDemo.prog()
+    //    SimpleDemo.prog()
+    //    SimpleDemo.prog()
     //    SumSqDemo.prog()
     //    FunctionDemo.prog()
+    //    PowDemo.prog()
     //    FactorialDemo.prog()
   }
 }
