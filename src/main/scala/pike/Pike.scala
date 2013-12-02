@@ -333,7 +333,7 @@ class Pike(val MemSize: Int = 1024) {
 
   /** kill instruction: ends program execution */
   object kill extends Instruction {
-    override def next() = {}
+    override def next() = { shouldKill = true }
   }
 
   /** Internal helper function for int operations */
