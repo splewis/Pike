@@ -217,6 +217,7 @@ class Pike(val MemSize: Int = 1024) {
       else nextInstruction()
     }
   }
+
   /** reljz instruction: jumps ahead n instruction if the int-valued register is 0 */
   case class reljz(n: Int, r: RegisterContainer) extends Instruction {
     override def next() = jz(instructionNumber + n, r).next()
@@ -229,6 +230,7 @@ class Pike(val MemSize: Int = 1024) {
       else nextInstruction()
     }
   }
+
   /** reljpos instruction: jumps to the nth instruction if the int-valued register is positive */
   case class reljpos(n: Int, r: RegisterContainer) extends Instruction {
     override def next() = jpos(instructionNumber + n, r).next()
@@ -241,9 +243,27 @@ class Pike(val MemSize: Int = 1024) {
       else nextInstruction()
     }
   }
+
   /** reljneg instruction: jumps to the nth instruction if the int-valued register is negative */
   case class reljneg(n: Int, r: RegisterContainer) extends Instruction {
     override def next() = jneg(instructionNumber + n, r).next()
+  }
+
+  protected def sameRegisterValues(r1: RegisterContainer, r2: RegisterContainer): Boolean = {
+    registerInfo(r1).equals(registerInfo(r2))
+  }
+
+  /** je instruction: jumps to the nth instruction if the given registers are equal */
+  case class je(n: Int, r1: RegisterContainer, r2: RegisterContainer) extends Instruction {
+    override def next() = {
+      if (sameRegisterValues(r1, r2)) goto(n)
+      else nextInstruction()
+    }
+  }
+
+  /** relje instruction: jumps to the nth instruction if the given registers are equal */
+  case class relje(n: Int, r1: RegisterContainer, r2: RegisterContainer) extends Instruction {
+    override def next() = je(instructionNumber + n, r1, r2).next()
   }
 
   /** label instruction: names a point in the code */
