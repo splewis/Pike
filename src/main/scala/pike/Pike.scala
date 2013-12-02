@@ -219,10 +219,7 @@ class Pike(val MemSize: Int = 1024) {
   }
   /** reljz instruction: jumps ahead n instruction if the int-valued register is 0 */
   case class reljz(n: Int, r: RegisterContainer) extends Instruction {
-    override def next() = {
-      if (getIntValue(r) == 0) goto(instructionNumber + n)
-      else nextInstruction()
-    }
+    override def next() = jz(instructionNumber + n, r).next()
   }
 
   /** jpos instruction: jumps to the nth instruction if the int-valued register is positive */
@@ -234,10 +231,7 @@ class Pike(val MemSize: Int = 1024) {
   }
   /** reljpos instruction: jumps to the nth instruction if the int-valued register is positive */
   case class reljpos(n: Int, r: RegisterContainer) extends Instruction {
-    override def next() = {
-      if (getIntValue(r) > 0) goto(instructionNumber + n)
-      else nextInstruction()
-    }
+    override def next() = jpos(instructionNumber + n, r).next()
   }
 
   /** jneg instruction: jumps to the nth instruction if the int-valued register is negative */
@@ -249,10 +243,7 @@ class Pike(val MemSize: Int = 1024) {
   }
   /** reljneg instruction: jumps to the nth instruction if the int-valued register is negative */
   case class reljneg(n: Int, r: RegisterContainer) extends Instruction {
-    override def next() = {
-      if (getIntValue(r) < 0) goto(instructionNumber + n)
-      else nextInstruction()
-    }
+    override def next() = jneg(instructionNumber + n, r).next()
   }
 
   /** label instruction: names a point in the code */
