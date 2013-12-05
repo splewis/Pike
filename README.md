@@ -88,6 +88,7 @@ Some things implemented in the language:
 - Jumps, conditional jumps, branching
 - Labels (and jumps to them)
 - Defining functions and calling them (stack-based execution, the call and ret instructions for functions internally set rsp and rbp registers)
+- Some type safety and meaningful error messages (for example: trying to add a float and an integer will fail, print out line number and why it failed)
 
 Some things that would make it more interesting:
 
